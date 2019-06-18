@@ -1,5 +1,6 @@
 from django.db import models
 from sharedstrings import models as sharedstrings
+from semantictags import models as semantictags
 # Create your models here.
 # class Strings(models.Model):
 #     id = models.AutoField(primary_key=True)
@@ -13,6 +14,7 @@ class Website(models.Model):
     description=models.CharField(max_length=255)
     user_name_pattern=models.CharField(null=True,max_length=1024)
     user_number_pattern=models.CharField(null=True,max_length=1024)
+    tags=models.ManyToManyField("semantictags.Tag",related_name="+")
 
 class Person(models.Model):
     id = models.AutoField(primary_key=True)
@@ -21,6 +23,7 @@ class Person(models.Model):
     pseudonyms = models.ManyToManyField("sharedstrings.Strings")
     description=models.CharField(max_length=255)
     merged_into=models.ForeignKey("self",related_name="merges_from",on_delete=models.DO_NOTHING,null=True)
+    tags=models.ManyToManyField("semantictags.Tag",related_name="+")
 
     def get_usernames(self):
         raise NotImplementedError()
@@ -42,6 +45,7 @@ class Username(models.Model):
     id = models.AutoField(primary_key=True)
     website=models.ForeignKey("Website",related_name="user_names",on_delete=models.DO_NOTHING)
     name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
+    tags=models.ManyToManyField("semantictags.Tag",related_name="+")
 
     def get_url(self):
         raise NotImplementedError()

@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'sharedstrings',
-    'retconpeople'
+    'semantictags',
+    'retconpeople',
+    'retconcreatives'
 ]
 
 MIDDLEWARE = [
