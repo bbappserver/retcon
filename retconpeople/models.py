@@ -8,6 +8,7 @@ from semantictags import models as semantictags
 
 class Website(models.Model):
     id = models.AutoField(primary_key=True)
+    parent_site = models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,related_name="child_sites")
     domain= models.CharField(max_length=256)
     name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
     tld = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
