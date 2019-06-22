@@ -10,3 +10,9 @@ class Tag(models.Model):
 class TagLabel(models.Model):
     label = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
     language_code= models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
+
+class Taggable(models.Model):
+    tags=models.ManyToManyField("semantictags.Tag")
+
+    class Meta:
+        abstract=True

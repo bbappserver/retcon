@@ -12,10 +12,14 @@ class Website(models.Model):
     name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
     tld = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
     description=models.CharField(max_length=255)
-    user_name_pattern=models.CharField(null=True,max_length=1024)
+    username_pattern=models.CharField(null=True,max_length=1024)
     user_number_pattern=models.CharField(null=True,max_length=1024)
     tags=models.ManyToManyField("semantictags.Tag",related_name="+")
 
+    def substitute_username_pattern(self,args):
+        raise NotImplementedError()
+    def substitute_user_number_pattern(self,args):
+        raise NotImplementedError()
 class Person(models.Model):
     id = models.AutoField(primary_key=True)
     first_name=models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING,null=True)
@@ -29,7 +33,7 @@ class Person(models.Model):
         raise NotImplementedError()
         l=[]
         for c in self._collect_children():
-            l.append(c.usrnames)
+            l.append(c.usernames)
         return l
 
     def _collect_children(self):
@@ -39,6 +43,28 @@ class Person(models.Model):
             l.append(c)
         l.append(self)
         return l
+        
+    def _merge_into(self,target):
+        if self.merged_into is None:
+            self.merged_into = target
+        else:
+            raise ValueError("Merge cannot be performed because this model is already merged")
+
+    def merge_with(self,target):
+        if target.id < self.id: 
+            self._merge_into(target)
+        else:
+            target._merge_into(self)
+        
+        target.save(update_fields=['merged_into'])
+    
+    def save(self, *args, **kwargs):
+        # Check how the current values differ from ._loaded_values. For example,
+        # prevent changing the creator_id of the model. (This example doesn't
+        # support cases where 'creator_id' is deferred).
+        if merged_into != self._loaded_values['merged_into'] and merged_into is not None:
+            raise ValueError("Altering merge target not supporte")
+        super().save(*args, **kwargs)
 
 
 class Username(models.Model):
@@ -50,7 +76,13 @@ class Username(models.Model):
     def get_url(self):
         raise NotImplementedError()
 
+    class Meta:
+        unique_together = ['website', 'name']
+
 class UserNumber(models.Model):
     id = models.AutoField(primary_key=True)
     website=models.ForeignKey("Website",related_name="user_numbers",on_delete=models.DO_NOTHING)
-    name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
+    number = models.BigIntegerField()
+
+    class Meta:
+        unique_together = ['website', 'number']
