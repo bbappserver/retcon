@@ -4,6 +4,11 @@ from retconpeople import models as people
 from semantictags import models as semantictags
 # Create your models here.
 
+class Genre(models.Model):
+    name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
+    decription= models.CharField(max_length=128)
+    parent = models.ForeignKey("self",null=True,on_delete=models.DO_NOTHING)
+
 class Studio(semantictags.Taggable):
     id = models.AutoField(primary_key=True)
     name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
