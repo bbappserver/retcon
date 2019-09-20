@@ -1,6 +1,9 @@
 from django.db import models
 from sharedstrings import models as sharedstrings
+from django.db.models import Lookup
 # Create your models here.
+
+
 
 class Tag(models.Model):
     id = models.AutoField(primary_key=True)
