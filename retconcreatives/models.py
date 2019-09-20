@@ -7,8 +7,11 @@ from semantictags import models as semantictags
 class Genre(models.Model):
     name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
     decription= models.CharField(max_length=128)
-    parent = models.ForeignKey("self",null=True,on_delete=models.DO_NOTHING)
-
+    parent = models.ForeignKey("self",null=True,blank=True,on_delete=models.DO_NOTHING)
+    def __str__(self):
+        return '{}'.format(self.name)
+    class Meta:
+        ordering = ('name',)
 class Studio(semantictags.Taggable):
     id = models.AutoField(primary_key=True)
     name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)

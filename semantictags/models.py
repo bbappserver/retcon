@@ -4,12 +4,12 @@ from sharedstrings import models as sharedstrings
 
 class Tag(models.Model):
     id = models.AutoField(primary_key=True)
-    labels = models.ForeignKey("TagLabel",related_name="definitions",on_delete=models.DO_NOTHING)
+    labels = models.ManyToManyField("TagLabel",related_name="definitions")
     definition=models.CharField(max_length=256)
 
 class TagLabel(models.Model):
-    label = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
-    language_code= models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
+    label = models.CharField(max_length=64)
+    language_code= models.ForeignKey("sharedstrings.Language",related_name="+",on_delete=models.DO_NOTHING)
 
 class Taggable(models.Model):
     tags=models.ManyToManyField("semantictags.Tag")
