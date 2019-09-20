@@ -13,3 +13,6 @@ class TagAdmin(admin.ModelAdmin):
     autocomplete_fields = ['labels']
     search_fields = ['labels__label__name']
     pass
+
+class TaggableAdmin(admin.ModelAdmin):
+    autocomplete_fields=['tags__labels']

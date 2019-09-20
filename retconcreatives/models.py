@@ -24,7 +24,8 @@ class CreativeWork(semantictags.Taggable):
     published_on=models.DateTimeField(null=True)
 
 class Series(semantictags.Taggable):
-    pass
+    name = models.CharField(max_length=64)
+    
 
 class Episode(CreativeWork):
 
@@ -57,8 +58,11 @@ class Episode(CreativeWork):
 
     name = models.ForeignKey("sharedstrings.Strings",on_delete=models.DO_NOTHING)
     part_of=models.ForeignKey("Series",on_delete=models.DO_NOTHING,null=True)
-    previous_episode=models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,related_name="next_episode")
+    order_in_series=models.PositiveSmallIntegerField(null=True,blank=True)
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
+
+    class Meta:
+        unique_together=[('part_of','order_in_series')]
 
 class Book(Episode):
     pass
