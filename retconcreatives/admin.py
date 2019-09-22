@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Genre,Series,WebVideo,Movie
+from .models import Genre,Series,WebVideo,Movie,Episode
 from semantictags.admin import TaggableAdmin
 @admin.register(Genre)
 class GenreAdmin(admin.ModelAdmin):
@@ -11,4 +11,8 @@ class SeriesAdmin(admin.ModelAdmin):
 
 @admin.register(Movie)
 class MovieAdmin(TaggableAdmin):
-    autocomplete_fields=['tags','name','part_of']
+    autocomplete_fields=['tags','part_of']
+
+@admin.register(Episode)
+class EpisodeAdmin(TaggableAdmin):
+    autocomplete_fields=['tags','part_of']

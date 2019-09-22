@@ -21,7 +21,7 @@ class TagLabel(models.Model):
         return "{}".format(self.label)
 
 class Taggable(models.Model):
-    tags=models.ManyToManyField("semantictags.Tag")
+    tags=models.ManyToManyField("semantictags.Tag",blank=True)
 
     class Meta:
         abstract=True

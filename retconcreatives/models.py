@@ -21,10 +21,12 @@ class Studio(semantictags.Taggable):
     website = models.ForeignKey("retconpeople.Website",on_delete=models.DO_NOTHING,null=True)
 
 class CreativeWork(semantictags.Taggable):
-    published_on=models.DateTimeField(null=True)
+    published_on=models.DateField(null=True)
 
-class Series(semantictags.Taggable):
+class Series(CreativeWork):
     name = models.CharField(max_length=64)
+    def __str__(self):
+        return "{}({})".format(self.name,self.published_on.year)
     
 
 class Episode(CreativeWork):
@@ -56,7 +58,7 @@ class Episode(CreativeWork):
     #End mediums
 
 
-    name = models.ForeignKey("sharedstrings.Strings",on_delete=models.DO_NOTHING)
+    name = models.CharField(max_length=64)
     part_of=models.ForeignKey("Series",on_delete=models.DO_NOTHING,null=True)
     order_in_series=models.PositiveSmallIntegerField(null=True,blank=True)
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
