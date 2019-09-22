@@ -16,9 +16,9 @@ class Tag(models.Model):
 
 class TagLabel(models.Model):
     label = models.CharField(max_length=64)
-    language_code= models.ForeignKey("sharedstrings.Language",related_name="+",on_delete=models.DO_NOTHING)
+    language= models.ForeignKey("sharedstrings.Language",related_name="+",on_delete=models.DO_NOTHING)
     def __str__(self):
-        return "{}".format(self.label)
+        return "{}.{}".format(self.language.isocode,self.label)
 
 class Taggable(models.Model):
     tags=models.ManyToManyField("semantictags.Tag",blank=True)

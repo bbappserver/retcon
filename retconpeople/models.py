@@ -27,12 +27,12 @@ class Website(models.Model):
 
 class Person(models.Model):
     id = models.AutoField(primary_key=True)
-    first_name=models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING,null=True)
-    last_name=models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING,null=True)
-    pseudonyms = models.ManyToManyField("sharedstrings.Strings")
-    description=models.CharField(max_length=255)
-    merged_into=models.ForeignKey("self",related_name="merges_from",on_delete=models.DO_NOTHING,null=True)
-    tags=models.ManyToManyField("semantictags.Tag",related_name="+")
+    first_name=models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING,null=True,blank=True)
+    last_name=models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING,null=True,blank=True)
+    pseudonyms = models.ManyToManyField("sharedstrings.Strings",related_name="+",blank=True)
+    description=models.CharField(max_length=255,blank=True)
+    merged_into=models.ForeignKey("self",related_name="merges_from",on_delete=models.DO_NOTHING,null=True,blank=True)
+    tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
 
     def get_usernames(self):
         raise NotImplementedError()
@@ -70,7 +70,7 @@ class Person(models.Model):
         if merged_into != self._loaded_values['merged_into'] and merged_into is not None:
             raise ValueError("Altering merge target not supporte")
         super().save(*args, **kwargs)
-
+#Todo person manager for getting only canonical person
 
 class UserName(models.Model):
     id = models.AutoField(primary_key=True)

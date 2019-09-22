@@ -25,7 +25,7 @@ class Language(models.Model):
                                   blank=True,
                                   default='',
                                   verbose_name=('Language name (in that language)'))
-    isocode = models.CharField(max_length=2,
+    isocode = models.CharField(max_length=7,
                                null=False,
                                blank=False,
                                unique=True,
