@@ -3,6 +3,11 @@ from .models import UserName,UserNumber,Person,Website
 
 # Register your models here.
 
+def merge_people(modeladmin, request, queryset):
+    # queryset.update(status='p')
+    pass
+merge_people.short_description = "Combine aliased people into the oldest one."
+
 
 class UserNameInline(admin.TabularInline):
     autocomplete_fields=["name","website"]
@@ -25,6 +30,7 @@ class PersonAdmin(admin.ModelAdmin):
 @admin.register(Website)
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
+    autocomplete_fields=["tld","tags","name","parent_site"]
     pass
 
     

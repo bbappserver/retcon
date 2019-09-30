@@ -7,7 +7,7 @@ class GenreAdmin(admin.ModelAdmin):
 
 @admin.register(Series)
 class SeriesAdmin(admin.ModelAdmin):
-    search_fields=['name']
+    search_fields=['name','tags']
 
 @admin.register(Movie)
 class MovieAdmin(TaggableAdmin):
