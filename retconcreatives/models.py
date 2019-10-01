@@ -22,6 +22,9 @@ class Studio(semantictags.Taggable):
 
 class CreativeWork(semantictags.Taggable):
     published_on=models.DateField(null=True)
+    # representes_collections = models.ManyToManyField('retconstorage.Collection')
+    # representes_remotables = models.ManyToManyField('retconremotables.RemoteEntity')
+
 
 class Series(CreativeWork):
     name = models.CharField(max_length=64)
