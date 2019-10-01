@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from sharedstrings import models as sharedstrings
 from semantictags import models as semantictags
 # Create your models here.
@@ -31,8 +32,10 @@ class Person(models.Model):
     last_name=models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING,null=True,blank=True)
     pseudonyms = models.ManyToManyField("sharedstrings.Strings",related_name="+",blank=True)
     description=models.CharField(max_length=255,blank=True)
-    merged_into=models.ForeignKey("self",related_name="merges_from",on_delete=models.DO_NOTHING,null=True,blank=True)
+    merged_into=models.ForeignKey("self",related_name="merged_from",on_delete=models.DO_NOTHING,null=True,blank=True)
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
+
+    canonicalize=False
 
     def get_usernames(self):
         raise NotImplementedError()
@@ -63,14 +66,41 @@ class Person(models.Model):
         
         target.save(update_fields=['merged_into'])
     
+    def clean(self):
+
+        #Cheap test first, aways need to do, doesn't hit db
+        if self.merged_into_id is not None:
+            if self.merged_into_id == self.id:
+                raise ValidationError({'merged_into': ('Cannot merge into self')})
+            if self.merged_into.merged_into.id is not None:
+                raise ValidationError({'merged_into': ('Cannot merge into merged object')})
+
+        if self.pk is not None:
+            #this is an update
+            if self.merged_into is not None:
+                #django normally updates without select, but we need to select
+                current = Person.objects.get(id=self.id)
+                if  current.merged_into_id is not None:
+                    if not self.canonicalize and  (current.merged_into_id !=self.merged_into_id):
+                        raise ValidationError({'merged_into': ('Changing merge target violates integrity.')})
+                    else:
+                        #Do a long scan for the current name
+                        target=self
+                        visited=[]
+                        while target.merged_into_id is not None:
+                            visited.append(target.id)
+
+                            #check both current and next id so we don't have to do unnecessary fetch
+                            if target.id in visited or target.merged_into_id in visited:
+                                raise ValidationError({'merged_into': ('Cycle detected:{}'.format(visited))})
+                            target = target.merged_into
+                        self.merged_into_id=target.id
+
+
+
     def save(self, *args, **kwargs):
-        # Check how the current values differ from ._loaded_values. For example,
-        # prevent changing the creator_id of the model. (This example doesn't
-        # support cases where 'creator_id' is deferred).
-        if merged_into != self._loaded_values['merged_into'] and merged_into is not None:
-            raise ValueError("Altering merge target not supporte")
+        self.full_clean()
         super().save(*args, **kwargs)
-#Todo person manager for getting only canonical person
 
 class UserName(models.Model):
     id = models.AutoField(primary_key=True)

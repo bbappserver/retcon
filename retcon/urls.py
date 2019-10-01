@@ -19,7 +19,7 @@ from rest_framework import routers
 import retconpeople.api,sharedstrings.api,semantictags.api
 
 router = routers.DefaultRouter()
-router.register(r'people', retconpeople.api.PersonViewSet)
+router.register(r'people', retconpeople.api.PersonViewSet,basename='person')
 router.register(r'usernames', retconpeople.api.UsernameViewSet)
 router.register(r'usernumbers', retconpeople.api.UserNumberViewSet)
 router.register(r'website', retconpeople.api.WebsiteViewSet)
@@ -32,6 +32,6 @@ router.register(r'taglabel', semantictags.api.TagLabelViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include(router.urls)),
+    path('api/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

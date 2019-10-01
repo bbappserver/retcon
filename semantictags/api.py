@@ -16,6 +16,11 @@ class TagViewSet(viewsets.ModelViewSet):
 class TagLabelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = TagLabel
+        label = serializers.SlugRelatedField(
+        many=False,
+        read_only=True,
+        slug_field='name'
+     )
         #fields = ['website','name']
 
 class TagLabelViewSet(viewsets.ModelViewSet):
