@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Q
 from .models import UserName,UserNumber,Person,Website
 
 # Register your models here.
@@ -20,10 +21,20 @@ class UserNumberInline(admin.TabularInline):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    autocomplete_fields=["pseudonyms","tags","first_name","last_name"]
+    search_fields=['first_name','last_name','pseudonyms']
+    autocomplete_fields=["pseudonyms","tags","first_name","last_name","merged_into"]
     inlines = [
         UserNameInline,UserNumberInline
     ]
+    order_by=('last_name','first_name')
+
+    def get_search_results(self, request, queryset, search_term):
+        q=Q(first_name__name__istartswith=search_term) | Q(last_name__name__istartswith=search_term)
+        q1=Person.objects.filter(q)
+        q2=Person.objects.filter(pseudonyms__name__istartswith=search_term)
+        q3=Person.objects.filter(usernames__name__name__istartswith=search_term)
+        return (q1 | q2 |q3 ,True)
+        # return super().get_search_results(request, queryset, search_term)
 
     pass
 

@@ -95,8 +95,45 @@ class Person(models.Model):
                                 raise ValidationError({'merged_into': ('Cycle detected:{}'.format(visited))})
                             target = target.merged_into
                         self.merged_into_id=target.id
+    def initials(self):
+        return self.first_name[0] if self.first_name else ""
+    
+    @property
+    def formatted_name(self,shorten=False):
+        if self.last_name is None:
+            if self.first_name is not None:
+                return self.first_name  
+            else:
+                try:
+                    o= self.pseudonyms.get()
+                    return o.name
+                except:
+                    try:
+                        un=self.usernames
+                        u=un[0]
+                        o=un.name.get()
+                        return o.name
+                    except:
+                        return "?"
+        else:
+            if self.first_name is not None:
+                if shorten:
+                    "{}.{}".format(self.first_name[0].upper(),self.last_name)
+                return "{}, {}".format(self.last_name,self.first_name)
+    @property
+    def brief(self,length=64,include_ellipsis=True):
+        s=self.description
+        if len(s)>length:
+            if include_ellipsis:
+                s=s[0:length-2]+u"…"
+            else:
+                s=s[0:length-1]
+        return s
+        
+        
 
-
+    def __str__(self):
+        return "{}: {}".format(self.formatted_name,self.brief)
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -117,7 +154,7 @@ class UserName(models.Model):
 
 class UserNumber(models.Model):
     id = models.AutoField(primary_key=True)
-    website=models.ForeignKey("Website",related_name="user_numbers",on_delete=models.DO_NOTHING)
+    website=models.ForeignKey("Website",related_name="user_numbers",on_delete=models.CASCADE)
     number = models.BigIntegerField()
     belongs_to=models.ForeignKey("Person",related_name='user_numbers',on_delete=models.DO_NOTHING,null=True,blank=True)
 
