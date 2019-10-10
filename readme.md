@@ -9,10 +9,11 @@
 ### Initial setup
 Install requirements, and initialize the database tables
 ```
+#Install python modules if you need them
 python3 -mpip install django djangorestframework
-python3 ./manage.py migrate
-python3 ./manage.py initlang
-python3 ./manage.py createsuperuser
+python3 ./manage.py migrate #Initialize database
+python3 ./manage.py importlang #Create language models from system locales
+python3 ./manage.py createsuperuser #Create the administrative user
 ```
 ### Running
 ```
