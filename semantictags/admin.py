@@ -46,7 +46,7 @@ class TagLabelAdmin(admin.ModelAdmin):
 class TagAdmin(admin.ModelAdmin):
     inlines = [TagLabelInline]
     exclude=["labels"]
-    autocomplete_fields=["canonical_label"]
+    autocomplete_fields=["canonical_label","distinguish_from","implies"]
     search_fields = ['labels__label__name']
 
     list_display=['id','canonical_label','definition']
