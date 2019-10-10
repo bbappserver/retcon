@@ -52,7 +52,8 @@ class TagAdmin(admin.ModelAdmin):
     list_display=['id','canonical_label','definition']
 
     def get_search_results(self, request, queryset, search_term):
-        queryset=Tag.objects.filter(labels__label__icontains=search_term)
+        queryset=Tag.objects.filter(labels__label__icontains=search_term )
+        queryset = queryset | Tag.objects.filter(canonical_label__label__istartswith=search_term )
         return queryset,True
 
 class TaggableAdmin(admin.ModelAdmin):
