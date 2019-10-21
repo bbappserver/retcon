@@ -6,6 +6,9 @@ class URL(models.model):
     url= models.CharField(max_length=512)
     represents = models.ForeignKey("RemoteEntity",related_name='urls',on_delete=models.DO_NOTHING)
 
+class EphemeralUrl(URL):
+    valid_until =  models.DateTimeField()
+
 class RemoteEntity(models.model):
     source_posted= models.DateTimeField(null=True)
 

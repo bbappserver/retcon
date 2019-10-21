@@ -1,10 +1,91 @@
-from rest_framework import serializers,viewsets
-from .models import Tag,TagLabel
+from django.shortcuts import redirect,get_object_or_404
+from rest_framework import serializers, viewsets
+from rest_framework.response import Response
+from .models import Tag, TagLabel
 
-class TagSerializer(serializers.HyperlinkedModelSerializer):
+
+class TagLabelSerializer(serializers.ModelSerializer):
+    language = serializers.SlugRelatedField(
+        many=False,
+        read_only=True,
+        slug_field='isocode'
+    )
+    # label = serializers.CharField()
+    # label = serializers.SlugRelatedField(
+    #         many=False,
+    #         read_only=True,
+    #         slug_field='name'
+    #     )
+
+    class Meta:
+        model = TagLabel
+        depth=1
+        fields = ['definitions','language', 'label']
+
+
+
+class TagLabelViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    queryset = TagLabel.objects.all()
+    serializer_class = TagLabelSerializer
+
+    def retrieve(self, request, pk=None):
+        queryset = TagLabel.objects.all()
+        lang= request.GET['locale'] if 'locale' in request.GET else request.LANGUAGE_CODE
+        
+        if not lang == "any":
+            queryset=queryset.filter(isocode=lang)
+        
+        tag=get_object_or_404(queryset,pk=pk)
+        
+        serializer = TagLabelSerializer(tag,context={'request': request})
+        return Response(serializer.data)
+    
+    def list(self, request):
+        queryset = TagLabel.objects.all()
+        lang= request.GET['locale'] if 'locale' in request.GET else request.LANGUAGE_CODE
+        
+        if not lang == "any":
+            queryset=queryset.filter(language__isocode=lang)
+        
+        serializer = TagLabelSerializer(queryset,many=True,context={'request': request})
+        return Response(serializer.data)
+
+
+
+class TagSerializer(serializers.ModelSerializer):
+    #labels = TagLabelSerializer(many=True)
+    labels = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field='label'
+    )
+    canonical_label = serializers.SlugRelatedField(
+        many=False,
+        read_only=True,
+        slug_field='label'
+    )
+
     class Meta:
         model = Tag
-        #fields = ['first_name', 'last_name', 'description', 'tags']
+        depth = 1
+        fields = ['id', 'labels','canonical_label']
+
+class TerseTagSerializer(serializers.ModelSerializer):
+    canonical_label = serializers.SlugRelatedField(
+        many=False,
+        read_only=True,
+        slug_field='label'
+    )
+
+    class Meta:
+        model = Tag
+        depth = 1
+        fields = ['id','canonical_label']
+    
+
 
 class TagViewSet(viewsets.ModelViewSet):
     """
@@ -13,19 +94,3 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
-class TagLabelSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = TagLabel
-        label = serializers.SlugRelatedField(
-        many=False,
-        read_only=True,
-        slug_field='name'
-     )
-        #fields = ['website','name']
-
-class TagLabelViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows users to be viewed or edited.
-    """
-    queryset = TagLabel.objects.all()
-    serializer_class = TagLabelSerializer

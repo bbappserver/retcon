@@ -4,10 +4,12 @@ from semantictags.admin import TaggableAdmin
 @admin.register(Genre)
 class GenreAdmin(admin.ModelAdmin):
     search_fields=['name__name']
+    autocomplete_fields=['name']
 
 @admin.register(Series)
 class SeriesAdmin(admin.ModelAdmin):
     search_fields=['name','tags']
+    autocomplete_fields=['tags']
 
 @admin.register(Movie)
 class MovieAdmin(TaggableAdmin):

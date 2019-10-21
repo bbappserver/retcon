@@ -10,12 +10,12 @@ from semantictags import models as semantictags
 class Website(models.Model):
     id = models.AutoField(primary_key=True)
     parent_site = models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,blank=True,related_name="child_sites")
-    domain= models.CharField(max_length=256)
+    domain= models.CharField(max_length=256,help_text="e.g. twitter.com")
     name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
     tld = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
     description=models.CharField(max_length=255)
-    username_pattern=models.CharField(null=True,blank=True,max_length=1024)
-    user_number_pattern=models.CharField(null=True,blank=True,max_length=1024)
+    username_pattern=models.CharField(null=True,blank=True,max_length=1024, help_text="regex with capture group for string after url scheme e.g.\n twitter\\.com/([^/]+)")
+    user_number_pattern=models.CharField(null=True,blank=True,max_length=1024,help_text="regex with capture group for string after url scheme e.g.\n pixiv\\.net/member\\.php\\?id=\\d+")
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
 
     def substitute_username_pattern(self,args):
