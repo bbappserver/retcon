@@ -8,20 +8,23 @@ from django.shortcuts import redirect,get_object_or_404
 class PersonSerializer(serializers.HyperlinkedModelSerializer):
     first_name = serializers.SlugRelatedField(
         many=False,
-        read_only=True,
-        slug_field='name'
+        read_only=False,
+        slug_field='name',
+        queryset=Strings.objects.all()
     )
 
     last_name = serializers.SlugRelatedField(
         many=False,
-        read_only=True,
-        slug_field='name'
+        read_only=False,
+        slug_field='name',
+        queryset=Strings.objects.all()
     )
 
     pseudonyms = serializers.SlugRelatedField(
         many=True,
-        read_only=True,
-        slug_field='name'
+        read_only=False,
+        slug_field='name',
+        queryset=Strings.objects.all()
     )
 
     tags = TagSerializer(many=True)
