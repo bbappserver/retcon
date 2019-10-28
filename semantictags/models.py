@@ -24,6 +24,7 @@ class TagLabel(models.Model):
 
 class Taggable(models.Model):
     tags=models.ManyToManyField("semantictags.Tag",blank=True)
+    ambiguous_tags=models.ManyToManyField("sharedstrings.Strings",blank=True)
 
     class Meta:
         abstract=True

@@ -1,5 +1,7 @@
 from django.shortcuts import redirect,get_object_or_404
-from rest_framework import serializers, viewsets
+from django.db.transaction import atomic
+from rest_framework import serializers, viewsets,status
+from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 from .models import Tag, TagLabel
 
@@ -53,6 +55,10 @@ class TagLabelViewSet(viewsets.ModelViewSet):
         serializer = TagLabelSerializer(queryset,many=True,context={'request': request})
         return Response(serializer.data)
 
+    @detail_route(methods=['patch'])
+    def add_definition(self,request):
+        pass
+
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -93,4 +99,21 @@ class TagViewSet(viewsets.ModelViewSet):
     """
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+
+    @detail_route(methods=['patch'])
+    def add_label(self,request):
+        queryset = TagLabel.objects.all()
+        try:
+            lang= request.PATCH['locale'] if 'locale' in request.PATCH else request.LANGUAGE_CODE
+
+            with atomic:
+                tag= self.get_object()
+                s=Strings.objects.get_or_create(name=request.PATCH.name)
+                s.save()
+                label=TagLabel.objects.get_or_create(language__isocode=lang,label=s)
+                label.save()
+            return Response("OK", status=status.HTTP_200_OK)
+        except:
+            return Response("An error occured", status=status.HTTP_400_BAD_REQUEST)
+        
 

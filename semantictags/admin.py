@@ -56,6 +56,6 @@ class TagAdmin(admin.ModelAdmin):
         queryset = queryset | Tag.objects.filter(canonical_label__label__istartswith=search_term )
         return queryset,True
 
-class TaggableAdmin(admin.ModelAdmin):
-    autocomplete_fields=['tags__labels']
+class TaggableAdminMixin(admin.ModelAdmin):
+    autocomplete_fields=['tags__labels','ambiguous_tags']
     

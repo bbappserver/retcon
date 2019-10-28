@@ -22,7 +22,7 @@ class UserNumberInline(admin.TabularInline):
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
     search_fields=['first_name','last_name','pseudonyms']
-    autocomplete_fields=["pseudonyms","tags","first_name","last_name","merged_into"]
+    autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","merged_into"]
     inlines = [
         UserNameInline,UserNumberInline
     ]
