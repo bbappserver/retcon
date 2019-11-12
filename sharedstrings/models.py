@@ -1,5 +1,6 @@
 from django.db import models
-
+from django import forms
+from django.contrib.admin.widgets import AutocompleteMixin
 # Create your models here.
 
 class Strings(models.Model):
@@ -7,6 +8,9 @@ class Strings(models.Model):
     name= models.CharField(max_length=64,unique=True)
     def __str__(self):
         return '{}'.format(self.name)
+    
+    class Meta:
+        verbose_name_plural = "strings"
 
 class Language(models.Model):
     '''
@@ -46,3 +50,56 @@ class Language(models.Model):
         verbose_name = ('language')
         verbose_name_plural = ('languages')
         ordering = ('-sorting', 'name', 'isocode', )
+
+class DummyTextInput(forms.TextInput,AutocompleteMixin):
+    def __init__(self, *args, **kwargs):
+        self.choices=[]
+        super().__init__(*args, **kwargs)
+
+class SharedStringFormField(forms.CharField):
+
+    def __init__(self, queryset, *, empty_label='---------', required=True, widget=None, label=None, initial=None, help_text='', to_field_name=None, limit_choices_to=None, **kwargs):
+        super().__init__(  max_length=None, min_length=None, strip=True, empty_value='',widget=DummyTextInput, **kwargs)
+        # super().__init__(queryset, *, empty_label=empty_label, required=required, widget=widget, label=label, initial=initial, help_text=help_text, to_field_name=to_field_name, limit_choices_to=limit_choices_to, **kwargs)
+    
+    def widget_attrs(self, widget):
+        attrs = super().widget_attrs(widget)
+        if self.max_length is not None and not widget.is_hidden:
+            # The HTML attribute is maxlength, not max_length.
+            attrs['maxlength'] = str(self.max_length)
+        if self.min_length is not None and not widget.is_hidden:
+            # The HTML attribute is minlength, not min_length.
+            attrs['minlength'] = str(self.min_length)
+        
+        return attrs
+    
+    # def prepare_value(self, value):
+    #     return super().prepare_value(Strings.objects.get(value).name)
+
+    def to_python(self, value):
+        if isinstance(value,str):
+            value,created = Strings.objects.get_or_create(name=value)
+        return value
+    
+    def prepare_value(self, value):
+        obj=Strings.objects.get(pk=int(value))
+        return obj.name
+
+
+
+
+class SharedStringField(models.ForeignKey):
+    def __init__(self, **kwargs):
+        super().__init__("sharedstrings.Strings", on_delete=models.PROTECT, related_name="+", **kwargs)
+    
+    def formfield(self, **kwargs):
+        # This is a fairly standard way to set up some defaults
+        # while letting the caller override them.
+        defaults = {'form_class': SharedStringFormField}
+        defaults.update(kwargs)
+        return super().formfield(**defaults)
+    
+    def to_python(self, value):
+        if isinstance(value,str):
+            value,created = Strings.objects.get_or_create(name=value)
+        return super().to_python(value)
