@@ -107,9 +107,12 @@ var register_autocomplete = function (event) {
     $(".autocompleteInput").each(function( index ) {
         var e =$( this );
         e.autocomplete({
-            source: e.attr('autocomplete-source')
+            source: e.attr('autocomplete-source'),
+            delay:500,
+            minLength:3
         });
       });
+      $('.autocompleteInput').parent().children('a').remove()
     
 
 }

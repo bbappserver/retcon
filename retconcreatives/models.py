@@ -5,7 +5,7 @@ from semantictags import models as semantictags
 # Create your models here.
 
 class Genre(models.Model):
-    name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
+    name = sharedstrings.SharedStringField()
     decription= models.CharField(max_length=128)
     parent = models.ForeignKey("self",null=True,blank=True,on_delete=models.DO_NOTHING)
     def __str__(self):

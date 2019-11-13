@@ -2,9 +2,10 @@ from django.contrib import admin
 from .models import Genre,Series,WebVideo,Movie,Episode,Company,RelatedSeries
 from semantictags.admin import TaggableAdminMixin
 
-class RelatedCreativeWorkInline(admin.TabularInline):
+class RelatedSeriesInline(admin.TabularInline):
     model=RelatedSeries
     fk_name = "to_series"
+    autocomplete_fields=('from_series',)
 
 @admin.register(Genre)
 class GenreAdmin(admin.ModelAdmin):
@@ -13,10 +14,10 @@ class GenreAdmin(admin.ModelAdmin):
 
 @admin.register(Series)
 class SeriesAdmin(admin.ModelAdmin):
-    search_fields=['name','tags']
+    search_fields=['name']
     autocomplete_fields=['tags','ambiguous_tags','produced_by','published_by']
     #readonly_fields = ('related_from_series',)
-    inlines=(RelatedCreativeWorkInline,)
+    inlines=(RelatedSeriesInline,)
 
 
 @admin.register(Movie)
