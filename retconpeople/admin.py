@@ -31,7 +31,7 @@ class PersonAdmin(admin.ModelAdmin):
     def get_search_results(self, request, queryset, search_term):
         q=Q(first_name__name__istartswith=search_term) | Q(last_name__name__istartswith=search_term)
         q1=Person.objects.filter(q)
-        q2=Person.objects.filter(pseudonyms__name__istartswith=search_term)
+        q2=Person.objects.filter(pseudonyms__name__icontains=search_term)
         q3=Person.objects.filter(usernames__name__name__istartswith=search_term)
         return (q1 | q2 |q3 ,True)
         # return super().get_search_results(request, queryset, search_term)
@@ -45,14 +45,15 @@ class WebsiteAdmin(admin.ModelAdmin):
     pass
 
     
+# Handled by inlines, reinstate if new fields render it necessary to have these as an admin panel.
+# @admin.register(UserName)
+# class UserNameAdmin(admin.ModelAdmin):
+#     search_fields=["name"]
+#     autocomplete_fields=["tags","name","website","belongs_to"]
+#     pass
 
-@admin.register(UserName)
-class UserNameAdmin(admin.ModelAdmin):
-    search_fields=["name"]
-    autocomplete_fields=["tags","name","website"]
-    pass
+# @admin.register(UserNumber)
+# class UserNumberAdmin(admin.ModelAdmin):
+#     autocomplete_fields=["belongs_to"]
 
-@admin.register(UserNumber)
-class UserNumberAdmin(admin.ModelAdmin):
-
-    pass
+#     pass

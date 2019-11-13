@@ -1,4 +1,4 @@
-from rest_framework import serializers,viewsets
+from rest_framework import serializers,viewsets,response
 from .models import Strings,Language
 
 class StringsSerializer(serializers.HyperlinkedModelSerializer):
@@ -12,6 +12,15 @@ class StringsViewSet(viewsets.ModelViewSet):
     """
     queryset = Strings.objects.all()
     serializer_class = StringsSerializer
+
+    def list(self, request):
+        search=request.query_params['term']
+        queryset = Strings.objects.filter(name__icontains=search)
+        l=(x.name for x in queryset)
+        
+        #serializer = StringsSerializer(queryset, many=True)
+        return response.Response(l)
+
 
 class LanguageSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

@@ -51,18 +51,27 @@ class Language(models.Model):
         verbose_name_plural = ('languages')
         ordering = ('-sorting', 'name', 'isocode', )
 
-class DummyTextInput(forms.TextInput,AutocompleteMixin):
+class SharedStringTextInput(forms.TextInput):
     def __init__(self, *args, **kwargs):
         self.choices=[]
         super().__init__(*args, **kwargs)
+    
+    class Media:
+        js=('https://code.jquery.com/jquery-1.12.4.js',
+        'https://code.jquery.com/ui/1.12.0/jquery-ui.min.js',
+        'sharedstringfield.js')
+        css = {
+            'all': ('sharedstringfield.css','https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css')
+        }
 
 class SharedStringFormField(forms.CharField):
-
+    widget=SharedStringTextInput
     def __init__(self, queryset, *, empty_label='---------', required=True, widget=None, label=None, initial=None, help_text='', to_field_name=None, limit_choices_to=None, **kwargs):
-        super().__init__(  max_length=None, min_length=None, strip=True, empty_value='',widget=DummyTextInput, **kwargs)
+        super().__init__(  max_length=None, min_length=None, strip=True, empty_value='',widget=SharedStringTextInput, **kwargs)
         # super().__init__(queryset, *, empty_label=empty_label, required=required, widget=widget, label=label, initial=initial, help_text=help_text, to_field_name=to_field_name, limit_choices_to=limit_choices_to, **kwargs)
     
     def widget_attrs(self, widget):
+        from rest_framework.reverse import reverse
         attrs = super().widget_attrs(widget)
         if self.max_length is not None and not widget.is_hidden:
             # The HTML attribute is maxlength, not max_length.
@@ -70,7 +79,9 @@ class SharedStringFormField(forms.CharField):
         if self.min_length is not None and not widget.is_hidden:
             # The HTML attribute is minlength, not min_length.
             attrs['minlength'] = str(self.min_length)
-        
+        c = attrs['class'] if 'class' in attrs else ''
+        attrs['class'] = c+" autocompleteInput"
+        attrs['autocomplete-source']=reverse('strings-list')
         return attrs
     
     # def prepare_value(self, value):
@@ -82,6 +93,8 @@ class SharedStringFormField(forms.CharField):
         return value
     
     def prepare_value(self, value):
+        if value is None:
+            return value
         obj=Strings.objects.get(pk=int(value))
         return obj.name
 
@@ -90,7 +103,11 @@ class SharedStringFormField(forms.CharField):
 
 class SharedStringField(models.ForeignKey):
     def __init__(self, **kwargs):
-        super().__init__("sharedstrings.Strings", on_delete=models.PROTECT, related_name="+", **kwargs)
+        kwargs.update(
+            {'to':"sharedstrings.Strings",
+            'related_name':"+",
+            'on_delete':models.PROTECT})
+        super().__init__(**kwargs)
     
     def formfield(self, **kwargs):
         # This is a fairly standard way to set up some defaults
@@ -103,3 +120,6 @@ class SharedStringField(models.ForeignKey):
         if isinstance(value,str):
             value,created = Strings.objects.get_or_create(name=value)
         return super().to_python(value)
+
+f=SharedStringTextInput()
+print(f.media)    
