@@ -122,6 +122,10 @@ class SharedStringField(models.ForeignKey):
         return super().formfield(**defaults)
 
     def to_python(self, value):
+        
+        if isinstance(value,int):
+            return super().to_python(value)
+
         if value is None or len(value) == 0:
             return None
         if isinstance(value, str):
