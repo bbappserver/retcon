@@ -5,35 +5,54 @@ from semantictags import models as semantictags
 # Create your models here.
 
 class Genre(models.Model):
-    name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
+    name = sharedstrings.SharedStringField()
     decription= models.CharField(max_length=128)
     parent = models.ForeignKey("self",null=True,blank=True,on_delete=models.DO_NOTHING)
     def __str__(self):
         return '{}'.format(self.name)
     class Meta:
         ordering = ('name',)
-class Studio(semantictags.Taggable):
+
+class Company(semantictags.Taggable):
     id = models.AutoField(primary_key=True)
-    name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
+    name=sharedstrings.SharedStringField()
+    # name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
     case_sensitive_name = models.BooleanField()
 
-    parent_studio=models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,related_name="child_studios")
-    website = models.ForeignKey("retconpeople.Website",on_delete=models.DO_NOTHING,null=True)
+    parent=models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,blank=True,related_name="children")
+    website = models.ForeignKey("retconpeople.Website",on_delete=models.DO_NOTHING,null=True,blank=True)
+
+    def __str__(self):
+        return self.name.name
 
 class CreativeWork(semantictags.Taggable):
     published_on=models.DateField(null=True)
+    published_by = models.ManyToManyField("Company",blank=True,related_name='published_%(class)s')
     # representes_collections = models.ManyToManyField('retconstorage.Collection')
     # representes_remotables = models.ManyToManyField('retconremotables.RemoteEntity')
 
 
 class Series(CreativeWork):
     name = models.CharField(max_length=64)
+    parent_series = models.ForeignKey("self",blank=True,null=True,on_delete=models.PROTECT,related_name='child_series')
+    related_series = models.ManyToManyField("self", through='RelatedSeries',symmetrical=False,through_fields=('from_series', 'to_series'),related_name='related_from_series')
+
+    produced_by = models.ManyToManyField("Company",blank=True,related_name='produced')
     def __str__(self):
         return "{}({})".format(self.name,self.published_on.year)
     
     class Meta:
         verbose_name_plural = "series"
-    
+
+class RelatedSeries(models.Model):
+    RELATIONS=(
+        (0,'adaptation'),
+        (1,'spinoff'),
+        (2,'sequel')
+    )
+    to_series=models.ForeignKey("Series",on_delete=models.DO_NOTHING)
+    from_series=models.ForeignKey("Series",related_name='based_off',on_delete=models.DO_NOTHING)
+    relationship=models.PositiveSmallIntegerField(choices=RELATIONS,help_text='e.g. <to_work> is a sequel to <from_work>')    
 
 class Episode(CreativeWork):
 
@@ -73,11 +92,11 @@ class Episode(CreativeWork):
         unique_together=[('part_of','order_in_series')]
 
 class Book(Episode):
-    authors = models.ManyToManyField('retconpeople.Person',related_name="+")
+    authors = models.ManyToManyField('retconpeople.Person')
     pass
 
 class Illustration(CreativeWork):
-    illustrators = models.ManyToManyField('retconpeople.Person',related_name="+")
+    illustrators = models.ManyToManyField('retconpeople.Person')
 
 class Comicbook(Book):
     pass

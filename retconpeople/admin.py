@@ -29,6 +29,9 @@ class PersonAdmin(admin.ModelAdmin):
     order_by=('last_name','first_name')
 
     def get_search_results(self, request, queryset, search_term):
+        if search_term == '':
+            return (Person.objects.all(),True)
+
         q=Q(first_name__name__istartswith=search_term) | Q(last_name__name__istartswith=search_term)
         q1=Person.objects.filter(q)
         q2=Person.objects.filter(pseudonyms__name__icontains=search_term)
