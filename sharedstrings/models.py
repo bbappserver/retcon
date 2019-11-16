@@ -74,7 +74,7 @@ class SharedStringFormField(forms.CharField):
 
     def __init__(self, queryset, *, empty_label='---------', required=True, widget=None, label=None, initial=None, help_text='', to_field_name=None, limit_choices_to=None, **kwargs):
         super().__init__(max_length=None, min_length=None, strip=True,
-                         empty_value='', widget=SharedStringTextInput, **kwargs)
+                         empty_value='',required=required, widget=SharedStringTextInput, **kwargs)
         # super().__init__(queryset, *, empty_label=empty_label, required=required, widget=widget, label=label, initial=initial, help_text=help_text, to_field_name=to_field_name, limit_choices_to=limit_choices_to, **kwargs)
 
     def widget_attrs(self, widget):
@@ -96,14 +96,21 @@ class SharedStringFormField(forms.CharField):
 
     def to_python(self, value):
         if isinstance(value, str):
+            if len(value) ==0:
+                return None
             value, created = Strings.objects.get_or_create(name=value)
         return value
 
     def prepare_value(self, value):
         if value is None:
             return value
-        obj = Strings.objects.get(pk=int(value))
-        return obj.name
+        elif  isinstance(value,int): 
+                obj = Strings.objects.get(pk=int(value))
+                return obj.name
+        elif isinstance(value,str):
+            if len(value)==0:
+                return None
+        return value
 
 
 class SharedStringField(models.ForeignKey):
@@ -119,7 +126,9 @@ class SharedStringField(models.ForeignKey):
             # while letting the caller override them.
         defaults = {'form_class': SharedStringFormField}
         defaults.update(kwargs)
-        return super().formfield(**defaults)
+        d= super().formfield(**defaults)
+        d.required=not self.blank
+        return d
 
     def to_python(self, value):
         

@@ -28,7 +28,7 @@ class Website(models.Model):
 
 class Person(models.Model):
     id = models.AutoField(primary_key=True)
-    first_name=sharedstrings.SharedStringField()
+    first_name=sharedstrings.SharedStringField(blank=True,null=True)
     last_name=sharedstrings.SharedStringField()
     pseudonyms = models.ManyToManyField("sharedstrings.Strings",related_name="+",blank=True)
     description=models.CharField(max_length=255,blank=True)
