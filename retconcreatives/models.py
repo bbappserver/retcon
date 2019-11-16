@@ -31,6 +31,9 @@ class Series(CreativeWork):
     def __str__(self):
         return "{}({})".format(self.name,self.published_on.year)
     
+    class Meta:
+        verbose_name_plural = "series"
+    
 
 class Episode(CreativeWork):
 
@@ -70,7 +73,11 @@ class Episode(CreativeWork):
         unique_together=[('part_of','order_in_series')]
 
 class Book(Episode):
+    authors = models.ManyToManyField('retconpeople.Person',related_name="+")
     pass
+
+class Illustration(CreativeWork):
+    illustrators = models.ManyToManyField('retconpeople.Person',related_name="+")
 
 class Comicbook(Book):
     pass
@@ -85,6 +92,8 @@ class TVEpisode(Movie):
     pass
 
 class Software(Episode):
+    SFT_PLATFORM_HELP='Platforms this sofware runs on including consoles and operating systems'
+    platforms= models.ManyToManyField('self',blank=True,related_name='+',help_text=SFT_PLATFORM_HELP)
     pass
 
 class WebVideo(Episode):
@@ -92,3 +101,10 @@ class WebVideo(Episode):
 
 class Actor(people.Person):
     acted_in = models.ManyToManyField("Episode")
+
+#class Author(people.Person):
+
+    #Authors may have a single colection designetd as tjings they have authored
+    #This is only good for fuzzy authorship, and sould ideally not benecessary so we'll leave 
+    # It commented out until we're sure there is a usecase.
+    #authorshipCollection = models.OneToOneField('retconstorage.Collection')

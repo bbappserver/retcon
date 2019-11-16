@@ -9,12 +9,12 @@ class GenreAdmin(admin.ModelAdmin):
 @admin.register(Series)
 class SeriesAdmin(admin.ModelAdmin):
     search_fields=['name','tags']
-    autocomplete_fields=['tags']
+    autocomplete_fields=['tags','ambiguous_tags']
 
 @admin.register(Movie)
 class MovieAdmin(TaggableAdminMixin):
-    autocomplete_fields=['tags','part_of']
+    autocomplete_fields=['tags','ambiguous_tags','part_of']
 
 @admin.register(Episode)
 class EpisodeAdmin(TaggableAdminMixin):
-    autocomplete_fields=['tags','part_of']
+    autocomplete_fields=['tags','ambiguous_tags','part_of']
