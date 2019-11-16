@@ -1,7 +1,6 @@
 from django.shortcuts import redirect,get_object_or_404
 from django.db.transaction import atomic
-from rest_framework import serializers, viewsets,status
-from rest_framework.decorators import detail_route
+from rest_framework import serializers, viewsets,status,decorators
 from rest_framework.response import Response
 from .models import Tag, TagLabel
 
@@ -55,7 +54,7 @@ class TagLabelViewSet(viewsets.ModelViewSet):
         serializer = TagLabelSerializer(queryset,many=True,context={'request': request})
         return Response(serializer.data)
 
-    @detail_route(methods=['patch'])
+    @decorators.action(methods=['patch'],detail=True)
     def add_definition(self,request):
         pass
 
@@ -100,7 +99,7 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
-    @detail_route(methods=['patch'])
+    @decorators.action(methods=['patch'],detail=True)
     def add_label(self,request):
         queryset = TagLabel.objects.all()
         try:

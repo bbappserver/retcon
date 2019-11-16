@@ -11,8 +11,6 @@ class Strings(models.Model):
     def __str__(self):
         return '{}'.format(self.name)
 
-    class Meta:
-        verbose_name_plural = "strings"
 
 
 class Language(models.Model):
@@ -63,11 +61,11 @@ class SharedStringTextInput(forms.TextInput):
         super().__init__(*args, **kwargs)
 
     class Media:
-        js = ('https://code.jquery.com/jquery-1.12.4.js',
-              'https://code.jquery.com/ui/1.12.0/jquery-ui.min.js',
+        js = ('jquery-1.12.4.js',
+              'jquery-ui.min.js',
               'sharedstringfield.js')
         css = {
-            'all': ('sharedstringfield.css', 'https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css')
+            'all': ('sharedstringfield.css', 'jquery-ui.css')
         }
 
 
