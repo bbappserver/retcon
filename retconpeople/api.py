@@ -123,7 +123,7 @@ class WebsiteSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Website
-        fields=['name','tld','domain',"description","username_pattern","user_number_pattern","parent_site","tags"]
+        fields=['id','name','tld','domain',"description","username_pattern","user_number_pattern","parent_site","tags"]
 
 
 class WebsiteViewSet(viewsets.ModelViewSet):
@@ -145,6 +145,5 @@ class WebsiteViewSet(viewsets.ModelViewSet):
             lnames= list(map(lambda x: x.name.name,site.user_names.all()))
             lnumbers=map(lambda x: x.number,site.user_numbers.all())
             lnames.extend(lnumbers)
-        print(lnames)
         return Response(lnames)
 
