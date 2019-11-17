@@ -106,7 +106,7 @@ class Person(models.Model):
                 return self.first_name  
             else:
                 try:
-                    o= self.pseudonyms.get()
+                    o= self.pseudonyms.all()[0]
                     return o.name
                 except:
                     try:

@@ -137,8 +137,8 @@ class WebsiteViewSet(viewsets.ModelViewSet):
     def users(self, request, pk=None):
         site = self.get_object()
 
-        if 'owners' in request.GET.params:
-            lnames= list(map(lambda x: (x.name.name,x.owned_by_id),site.user_names.all()))
+        if 'owners' in request.GET:
+            lnames= list(map(lambda x: (x.name.name,x.belongs_to_id),site.user_names.all()))
             lnumbers=map(lambda x: x.number,site.user_numbers.all())
             lnames.extend(lnumbers)
         else:
