@@ -1,12 +1,24 @@
 from rest_framework import serializers,viewsets,status
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action,renderer_classes
+from rest_framework.renderers import JSONRenderer
 from .models import Person,UserName,UserNumber,Website
 from sharedstrings.models import Strings
 from semantictags.api import TagSerializer,TagLabelSerializer
 from django.shortcuts import redirect,get_object_or_404
 import json
+
+from rest_framework import renderers
+
+
+class PlainTextRenderer(renderers.BaseRenderer):
+    media_type = 'text/plain'
+    format = 'txt'
+
+    def render(self, data, media_type=None, renderer_context=None):
+        return data.encode(self.charset)
+
 
 class UsernameSerializer(serializers.ModelSerializer):
     website = serializers.SlugRelatedField(
@@ -132,10 +144,12 @@ class WebsiteViewSet(viewsets.ModelViewSet):
     """
     queryset = Website.objects.all()
     serializer_class = WebsiteSerializer
-
+    renderer_classes=(JSONRenderer,PlainTextRenderer)
     @action(detail=True, methods=['get'])
-    def users(self, request, pk=None):
+    
+    def users(self, request, pk=None,format=None):
         site = self.get_object()
+        
 
         if 'owners' in request.GET:
             lnames= list(map(lambda x: (x.name.name,x.belongs_to_id),site.user_names.all()))
@@ -145,5 +159,9 @@ class WebsiteViewSet(viewsets.ModelViewSet):
             lnames= list(map(lambda x: x.name.name,site.user_names.all()))
             lnumbers=map(lambda x: x.number,site.user_numbers.all())
             lnames.extend(lnumbers)
-        return Response(lnames)
+        
+        if format == "txt":
+            lnames= "\n".join(lnames)
+
+            return Response(lnames)
 
