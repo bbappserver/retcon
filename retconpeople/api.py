@@ -145,8 +145,8 @@ class WebsiteViewSet(viewsets.ModelViewSet):
     queryset = Website.objects.all()
     serializer_class = WebsiteSerializer
     renderer_classes=(JSONRenderer,PlainTextRenderer)
-    @action(detail=True, methods=['get'])
     
+    @action(detail=True, methods=['get'])
     def users(self, request, pk=None,format=None):
         site = self.get_object()
         
@@ -160,7 +160,7 @@ class WebsiteViewSet(viewsets.ModelViewSet):
             lnumbers=map(lambda x: x.number,site.user_numbers.all())
             lnames.extend(lnumbers)
         
-        if format == "txt":
+        if format == "txt" and not 'owners' in request.GET:
             lnames= "\n".join(lnames)
 
             return Response(lnames)
