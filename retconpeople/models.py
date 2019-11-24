@@ -142,13 +142,16 @@ class Person(models.Model):
 
 class UserName(models.Model):
     id = models.AutoField(primary_key=True)
-    website=models.ForeignKey("Website",related_name="user_names",on_delete=models.DO_NOTHING)
+    website=models.ForeignKey("Website",related_name="user_names",on_delete=models.PROTECT)
     name = sharedstrings.SharedStringField()
     tags=models.ManyToManyField("semantictags.Tag",related_name="+")
-    belongs_to=models.ForeignKey("Person",related_name='usernames',on_delete=models.DO_NOTHING,null=True,blank=True)
+    belongs_to=models.ForeignKey("Person",related_name='usernames',on_delete=models.CASCADE,null=True,blank=True)
 
     def get_url(self):
         raise NotImplementedError()
+    
+    def __str__(self):
+        return "{}@{}".format(self.name,str(self.website))
 
     class Meta:
         unique_together = ['website', 'name']
@@ -161,3 +164,6 @@ class UserNumber(models.Model):
 
     class Meta:
         unique_together = ['website', 'number']
+    
+    def __str__(self):
+        return str(self.number)
