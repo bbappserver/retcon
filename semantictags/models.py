@@ -12,6 +12,7 @@ class Tag(models.Model):
     definition=models.CharField(max_length=256)
     implies = models.ManyToManyField("self",symmetrical=False,blank=True,related_name="implied_by")
     distinguish_from = models.ManyToManyField("self",symmetrical=True,blank=True)
+    conflicts_with = models.ManyToManyField("self",symmetrical=True,blank=True,help_text="&forall;x p(x) &harr; &not;q(x)")
 
     def __str__(self):
         return "{}({}) - {}".format(self.canonical_label,self.id,self.definition)
