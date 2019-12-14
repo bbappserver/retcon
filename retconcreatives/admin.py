@@ -1,6 +1,13 @@
 from django.contrib import admin
-from .models import Genre,Series,WebVideo,Movie,Episode,Company,RelatedSeries,Illustration,Title
+from .models import Genre,Series,WebVideo,Movie,Episode,Company,RelatedSeries,Illustration,Title,CreativeWork
 from semantictags.admin import TaggableAdminMixin
+
+class ExternalContentInline(admin.TabularInline):
+    model=CreativeWork.external_representation.through
+    extra=1
+    verbose_name="External URL"
+    verbose_name_plural="External URLs"
+
 
 class RelatedSeriesInline(admin.TabularInline):
     model=RelatedSeries
@@ -22,7 +29,8 @@ class SeriesAdmin(admin.ModelAdmin):
     search_fields=['name']
     autocomplete_fields=['tags','ambiguous_tags','produced_by','published_by','created_by','parent_series']
     #readonly_fields = ('related_from_series',)
-    inlines=(RelatedSeriesInline,LocalizedTitleInline,)
+    exclude=["external_representation"]
+    inlines=(RelatedSeriesInline,LocalizedTitleInline,ExternalContentInline)
 
 
 @admin.register(Movie)
@@ -32,7 +40,8 @@ class MovieAdmin(TaggableAdminMixin):
 @admin.register(Episode)
 class EpisodeAdmin(TaggableAdminMixin):
     autocomplete_fields=['tags','ambiguous_tags','part_of','published_by','created_by']
-    inlines=(LocalizedTitleInline,)
+    exclude=["external_representation"]
+    inlines=(LocalizedTitleInline,ExternalContentInline)
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
@@ -43,4 +52,6 @@ class CompanyAdmin(admin.ModelAdmin):
 @admin.register(Illustration)
 class IllustrationAdmin(admin.ModelAdmin):
         autocomplete_fields=['tags','ambiguous_tags','published_by','illustrators','created_by']
-        inlines=(LocalizedTitleInline,)
+        exclude=["external_representation"]
+        inlines=(LocalizedTitleInline,ExternalContentInline)
+

@@ -36,6 +36,7 @@ class Person(models.Model):
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
     ambiguous_tags=models.ManyToManyField("sharedstrings.Strings",blank=True)
 
+    external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
     canonicalize=False
 
     def get_usernames(self):

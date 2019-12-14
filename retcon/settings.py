@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'sharedstrings',
     'semantictags',
     'retconpeople',
-    'retconcreatives'
+    'retconcreatives',
+    'remotables',
 ]
 
 MIDDLEWARE = [

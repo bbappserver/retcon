@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.db.models import Q
 from .models import UserName,UserNumber,Person,Website
-
 # Register your models here.
 
 def merge_people(modeladmin, request, queryset):
@@ -9,6 +8,11 @@ def merge_people(modeladmin, request, queryset):
     pass
 merge_people.short_description = "Combine aliased people into the oldest one."
 
+class ExternalPersonContentInline(admin.TabularInline):
+    model=Person.external_representation.through
+    extra=1
+    verbose_name="External URL"
+    verbose_name_plural="External URLs"
 
 class UserNameInline(admin.TabularInline):
     autocomplete_fields=["name","website"]
@@ -21,10 +25,12 @@ class UserNumberInline(admin.TabularInline):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
+    exclude=("external_representation",)
     search_fields=['first_name','last_name','pseudonyms']
     autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","merged_into"]
+    
     inlines = [
-        UserNameInline,UserNumberInline
+        UserNameInline,UserNumberInline,ExternalPersonContentInline
     ]
     order_by=('last_name','first_name')
 
