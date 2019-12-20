@@ -1,10 +1,15 @@
 from rest_framework import serializers,viewsets,response
 from .models import Strings,Language
 
-class StringsSerializer(serializers.HyperlinkedModelSerializer):
+class StringsSerializer(serializers.ModelSerializer):
+    
+    # id= serializers.IntegerField()
+    # name = serializers.CharField()
+
     class Meta:
         model = Strings
         fields = ['id','name']
+    
 
 class StringsViewSet(viewsets.ModelViewSet):
     """
@@ -22,17 +27,35 @@ class StringsViewSet(viewsets.ModelViewSet):
                     score+=N
             N-=1
         return score
+    
+    
+    # def partial_update(self, request, *args, **kwargs):
+    #     instance = self.queryset.get(pk=kwargs.get('pk'))
+    #     serializer = self.serializer_class(instance, data=request.data, partial=True)
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.save()
+    #     return response.Response(serializer.data)
 
 
     def list(self, request):
-        search=request.query_params['term']
+
+        if len(request.query_params)==0:
+            serializer = StringsSerializer(Strings.objects.all(), many=True)
+            return response.Response(serializer.data)
+        if 'name' in request.query_params:
+            search=request.query_params['name']
+        if 'term' in request.query_params:
+            search=request.query_params['term']
         queryset = Strings.objects.filter(name__icontains=search).order_by('name')
         l=( (x.name,self.string_score(x.name,search)) for x in queryset)
         sorted_by_second = sorted(l, key=lambda tup: -tup[1])
         l= [x[0] for x in sorted_by_second]
-
+        status=200
+        if len(l)==0:
+            status=404
         #serializer = StringsSerializer(queryset, many=True)
-        return response.Response(l)
+        return response.Response(l,status=status)
+    
 
 
 class LanguageSerializer(serializers.HyperlinkedModelSerializer):
@@ -46,3 +69,8 @@ class LanguageViewSet(viewsets.ModelViewSet):
     """
     queryset = Language.objects.all()
     serializer_class = LanguageSerializer
+
+    def create(self,request):
+        return response.Response("Languages cannot be edited via API",status=403)
+    def update(self,request):
+        return response.Response("Languages cannot be edited via API",status=403)
