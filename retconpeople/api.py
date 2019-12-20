@@ -83,31 +83,41 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
         many=False,
         read_only=False,
         slug_field='name',
-        queryset=Strings.objects.all()
+        queryset=Strings.objects.all(),
+        required=False
     )
 
     last_name = serializers.SlugRelatedField(
         many=False,
         read_only=False,
         slug_field='name',
-        queryset=Strings.objects.all()
+        queryset=Strings.objects.all(),
+        required=False
     )
 
     pseudonyms = serializers.SlugRelatedField(
         many=True,
         read_only=False,
         slug_field='name',
-        queryset=Strings.objects.all()
+        queryset=Strings.objects.all(),
+        required=False
     )
 
-    usernames=LeafUsernameSerializer(many=True)
-    user_numbers=LeafUserNumberSerializer(many=True)
 
-    tags = TagSerializer(many=True)
+    usernames=LeafUsernameSerializer(many=True,required=False)
+    user_numbers=LeafUserNumberSerializer(many=True,required=False)
+
+    tags = TagSerializer(many=True,required=False)
     class Meta:
         model = Person
         depth=1
         fields = ['first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers']
+    
+    def create(self, validated_data):
+        # profile_data = validated_data.pop('profile')
+        user = Person.objects.create(**validated_data)
+        # Profile.objects.create(user=user, **profile_data)
+        return user
 
 class PersonViewSet(viewsets.ModelViewSet):
     """

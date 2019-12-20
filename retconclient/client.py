@@ -61,14 +61,13 @@ class Exists(Exception):
 class MultipleRows(Exception):
     pass
 
-class SharedString:
-    endpoint="/api/strings/"
-    def __init__(self,client,id=None,name=None):
+class ClientObject:
+    endpoint=None
+    def __init__(self,client,id=None):
         self.client=client
+        self.endpoint=self._endpoint
         self.id=id
-        self.name=name
-        self.endpoint=client.domain+self.endpoint
-    
+
     def save(self):
         if self.id is None:
             self.create()
@@ -76,20 +75,13 @@ class SharedString:
             self.update()
 
     def get_or_create(self):
-        
         try:
             self.get()
         except DoesNotExist:
             self.create()
         return self
-
-    def as_dict(self):
-        d= {'id':self.id,'name':self.name}
-        return d
-        
-
+    
     def get(self):
-        
         if self.id is None:
             raise NotImplementedError("TODO DRF filters")
         
@@ -101,7 +93,10 @@ class SharedString:
             return self
         else:
             raise DoesNotExist()
-
+    
+    def filter(self):
+        '''TODO Not Implemented'''
+        raise NotImplementedError("TODO DRF filters")
 
     def create(self):
         r=self.client.post(self.endpoint,data=self.as_dict())
@@ -127,22 +122,42 @@ class SharedString:
         return self.endpoint+str(self.id)+'/'
     
     @property
+    def _endpoint(self):
+        return self.client.domain+self.endpoint
+    
+    def as_dict(self):
+        d=dict(self.__dict__)
+        del d["client"]
+        del d["endpoint"]
+        return d
+
+class SharedString(ClientObject):
+    endpoint="/api/strings/"
+    def __init__(self,client,id=None,name=None):
+        super().__init__(client,id)
+        self.name=name
+        
+    @property
     def exists(self):
         raise NotImplementedError
 
     def list(self):
         r=self.client.get(self.endpoint)
-        print(r.text)
-    @classmethod
-    def list(self,client):
-        r=client.get(client.domain+self.endpoint)
-        print(r.text)
+        for e in r:
+            s=self.alloc()
+            d=json.loads(r.text)
+            for k in d.keys():
+                setattr(s,k,d[k])
+            yield e
+    def alloc(self):
+        '''Create an empty clone of this class type connected to the same client'''
+        return self.client.SharedString()
 
 
 
 #print(r.text[0:1000])
 
-class Person:
+class Person(ClientObject):
     def __init__(self,
         id=None,
         first_name=None,
@@ -162,14 +177,6 @@ class Person:
         self.usernames=usernames,
         self.usernumbers=usernumbers
 
-    def get(id):
-        pass
-
-    def save(self):
-        if(self.id is None):
-            self.create()
-        else:
-            self.update()
 
 
 # print("test")
