@@ -13,6 +13,7 @@ class ExternalPersonContentInline(admin.TabularInline):
     extra=1
     verbose_name="External URL"
     verbose_name_plural="External URLs"
+    autocomplete_fields=["contentresource"]
 
 class UserNameInline(admin.TabularInline):
     autocomplete_fields=["name","website"]

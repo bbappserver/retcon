@@ -7,6 +7,7 @@ class ExternalContentInline(admin.TabularInline):
     extra=1
     verbose_name="External URL"
     verbose_name_plural="External URLs"
+    autocomplete_fields=["contentresource"]
 
 
 class RelatedSeriesInline(admin.TabularInline):
