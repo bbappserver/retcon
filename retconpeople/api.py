@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action,renderer_classes
 from rest_framework.renderers import JSONRenderer
 from .models import Person,UserName,UserNumber,Website
-from sharedstrings.models import Strings
+from sharedstrings.api import StringsField
 from semantictags.api import TagSerializer,TagLabelSerializer
 from django.shortcuts import redirect,get_object_or_404
 import json
@@ -23,14 +23,11 @@ class PlainTextRenderer(renderers.BaseRenderer):
 class UsernameSerializer(serializers.ModelSerializer):
     website = serializers.SlugRelatedField(
         many=False,
-        read_only=True,
-        slug_field='domain'
+        read_only=False,
+        slug_field='domain',
+        queryset=Website.objects.all()
     )
-    name = serializers.SlugRelatedField(
-        many=False,
-        read_only=True,
-        slug_field='name'
-    )
+    name = StringsField()
     class Meta:
         model = UserName
         
@@ -53,18 +50,22 @@ class UsernameViewSet(viewsets.ModelViewSet):
 class UserNumberSerializer(serializers.HyperlinkedModelSerializer):
     website = serializers.SlugRelatedField(
         many=False,
-        read_only=True,
-        slug_field='domain'
+        read_only=False,
+        slug_field='domain',
+        queryset=Website.objects.all()
     )
     class Meta:
         model = UserNumber
         fields = ['website', 'number','belongs_to']
+    
+
 
 class LeafUserNumberSerializer(serializers.HyperlinkedModelSerializer):
     website = serializers.SlugRelatedField(
         many=False,
-        read_only=True,
-        slug_field='domain'
+        read_only=False,
+        slug_field='domain',
+        queryset=Website.objects.all()
     )
     class Meta:
         model = UserNumber
@@ -79,29 +80,11 @@ class UserNumberViewSet(viewsets.ModelViewSet):
 
 
 class PersonSerializer(serializers.HyperlinkedModelSerializer):
-    first_name = serializers.SlugRelatedField(
-        many=False,
-        read_only=False,
-        slug_field='name',
-        queryset=Strings.objects.all(),
-        required=False
-    )
+    first_name = StringsField(required=False)
 
-    last_name = serializers.SlugRelatedField(
-        many=False,
-        read_only=False,
-        slug_field='name',
-        queryset=Strings.objects.all(),
-        required=False
-    )
+    last_name = StringsField(required=False)
 
-    pseudonyms = serializers.SlugRelatedField(
-        many=True,
-        read_only=False,
-        slug_field='name',
-        queryset=Strings.objects.all(),
-        required=False
-    )
+    pseudonyms = StringsField(many=True,required=False)
 
 
     usernames=LeafUsernameSerializer(many=True,required=False)
@@ -111,13 +94,67 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Person
         depth=1
-        fields = ['first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers']
+        fields = ['id','first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers']
     
     def create(self, validated_data):
         # profile_data = validated_data.pop('profile')
         user = Person.objects.create(**validated_data)
         # Profile.objects.create(user=user, **profile_data)
         return user
+    
+    @action(detail=True, methods=['get','post','delete'])
+    def users(self, request, pk=None,format=None):
+        person = self.get_object()
+        
+        if request.method == 'get':
+            l=[]
+            l.update(self.usernames)
+            l.update(self.user_numbers)
+            return Response(l)
+        elif request.method == 'post':
+            l=request.body
+            for e in l:
+                if(hasattr(e,'name')):
+                    person.usernames.add(e)
+                else:
+                    person.user_numbers.add(e)
+            person.save()
+            return Response([],status=200)
+        elif request.method == 'delete':
+            l=request.body
+            for e in l:
+                if(hasattr(e,'name')):
+                    person.usernames.remove(e)
+                else:
+                    person.user_numbers.remove(e)
+            person.save()
+            return Response([],status=200)
+
+            
+    # def update(self, instance, validated_data):
+    #     s_usernames = validated_data.pop('usernames')
+    #     s_usernumbers = validated_data.pop('user_numbers')
+    #     usernames = instance.usernames
+    #     usernumbers = instance.usernumbers
+
+    #     copy_fields= list(self.fields)
+    #     list.remove('usernames')
+    #     list.remove('user_numbers')
+
+    #     #copy or update
+    #     for k in copy_fields:
+    #         setattr(instance,k,validated_data.get(k, getattr(instance,k)))
+
+    #     for d in s_usernames:
+    #         domain=s_usernames['website']
+    #         name= s_usernames['name']
+
+    #         instance.usernames.through.get_or_create(person=instance,website__domain=domain,name=name)
+
+    #     instance.save()
+
+    #     return instance
+    
 
 class PersonViewSet(viewsets.ModelViewSet):
     """
@@ -140,8 +177,10 @@ class PersonViewSet(viewsets.ModelViewSet):
 
 
 class WebsiteSerializer(serializers.HyperlinkedModelSerializer):
-    name = serializers.SlugRelatedField(many=False,read_only=False,slug_field='name',queryset=Strings.objects.all())
-    tld = serializers.SlugRelatedField(many=False,read_only=False,slug_field='name',queryset=Strings.objects.all())
+    name = StringsField()
+
+    #TODO derive tld automatically in model and make this readonly
+    tld = StringsField()
 
     class Meta:
         model = Website

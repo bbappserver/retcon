@@ -10,7 +10,7 @@ from semantictags import models as semantictags
 class Website(models.Model):
     id = models.AutoField(primary_key=True)
     parent_site = models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,blank=True,related_name="child_sites")
-    domain= models.CharField(max_length=256,help_text="e.g. twitter.com")
+    domain= models.CharField(max_length=256,help_text="e.g. twitter.com",unique=True)
     name = sharedstrings.SharedStringField()
     tld = sharedstrings.SharedStringField()
     description=models.CharField(max_length=255)
