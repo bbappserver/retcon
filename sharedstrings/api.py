@@ -55,7 +55,31 @@ class StringsViewSet(viewsets.ModelViewSet):
             status=404
         #serializer = StringsSerializer(queryset, many=True)
         return response.Response(l,status=status)
-    
+
+class StringsField(serializers.RelatedField):
+
+    def __init__(self,*args,**kwargs):
+        #kwargs['read_only']=False
+        if 'queryset' not in kwargs and ('read_only' not in kwargs or kwargs['read_only'] == False):
+            kwargs['queryset']= Strings.objects.all()
+        
+        return super().__init__(*args,**kwargs)
+
+    def to_representation(self, value):
+#        assert(isinstance(value.name,str))
+        return str(value.name)
+    def to_internal_value(self, data):
+        if isinstance(data,str):
+            if hasattr(self,'queryset'):
+                qs= self.queryset
+            else:
+                qs = Strings.objects.all()
+
+            s, created = qs.get_or_create(name=data)
+            return s
+        else:
+            raise ValueError()
+        
 
 
 class LanguageSerializer(serializers.HyperlinkedModelSerializer):
