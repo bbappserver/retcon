@@ -40,21 +40,25 @@ class StringsViewSet(viewsets.ModelViewSet):
     def list(self, request):
 
         if len(request.query_params)==0:
-            serializer = StringsSerializer(Strings.objects.all(), many=True)
-            return response.Response(serializer.data)
+            return super().list(request)
         if 'name' in request.query_params:
-            search=request.query_params['name']
-        if 'term' in request.query_params:
+            #A programatic general search
+            return super().list(request)
+        elif 'term' in request.query_params:
+            #A search for autocomplation
             search=request.query_params['term']
-        queryset = Strings.objects.filter(name__icontains=search).order_by('name')
-        l=( (x.name,self.string_score(x.name,search)) for x in queryset)
-        sorted_by_second = sorted(l, key=lambda tup: -tup[1])
-        l= [x[0] for x in sorted_by_second]
-        status=200
-        if len(l)==0:
-            status=404
-        #serializer = StringsSerializer(queryset, many=True)
-        return response.Response(l,status=status)
+            queryset = Strings.objects.filter(name__icontains=search).order_by('name')
+            l=( (x.name,self.string_score(x.name,search)) for x in queryset)
+            sorted_by_second = sorted(l, key=lambda tup: -tup[1])
+            l= [x[0] for x in sorted_by_second]
+            status=200
+            if len(l)==0:
+                status=404
+            #serializer = StringsSerializer(queryset, many=True)
+            return response.Response(l,status=status)
+        else:
+            return super().list(request)
+
 
 class StringsField(serializers.RelatedField):
 
