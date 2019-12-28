@@ -7,7 +7,7 @@ from sharedstrings.models import Language
 
 
 class TagDefinitionInline(admin.StackedInline):
-    model = TagLabel.definitions.through
+    model = Tag.labels.through
     extra = 1
     autocomplete_fields=["tag"]
 

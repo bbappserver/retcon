@@ -7,7 +7,7 @@ from django.db.models import Lookup
 
 class Tag(models.Model):
     id = models.AutoField(primary_key=True)
-    labels = models.ManyToManyField("TagLabel",related_name="definitions")
+    labels = models.ManyToManyField("TagLabel",related_name="+")
     canonical_label = models.ForeignKey("TagLabel",null=True,blank=True,on_delete=models.DO_NOTHING,related_name="+")
     definition=models.CharField(max_length=256)
     implies = models.ManyToManyField("self",symmetrical=False,blank=True,related_name="implied_by")
@@ -20,6 +20,11 @@ class Tag(models.Model):
 class TagLabel(models.Model):
     label = models.CharField(max_length=64)
     language= models.ForeignKey("sharedstrings.Language",related_name="+",on_delete=models.DO_NOTHING)
+    
+    @property
+    def definitions(self):
+        return Tag.objects.filter(labels=self) | Tag.objects.filter(canonical_label=self)
+
     def __str__(self):
         return "{}.{}".format(self.language.isocode,self.label)
 

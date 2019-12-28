@@ -3,6 +3,7 @@ from django.db.transaction import atomic
 from rest_framework import serializers, viewsets,status,decorators
 from rest_framework.response import Response
 from .models import Tag, TagLabel
+from sharedstrings.api import StringsField
 
 
 class TagLabelSerializer(serializers.ModelSerializer):
@@ -11,6 +12,16 @@ class TagLabelSerializer(serializers.ModelSerializer):
         read_only=True,
         slug_field='isocode'
     )
+    #label= StringsField()
+    definitions = serializers.SerializerMethodField()
+    
+    def get_definitions(self,obj):
+        l= Tag.objects.filter(labels=obj) | Tag.objects.filter(canonical_label=obj)
+        s=set()
+        for t in l:
+            if t.id not in s:
+                s.add(t.id)
+        return list(s)
     # label = serializers.CharField()
     # label = serializers.SlugRelatedField(
     #         many=False,
@@ -20,8 +31,8 @@ class TagLabelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TagLabel
-        depth=1
-        fields = ['definitions','language', 'label']
+        #depth=1
+        fields = ['label','language','definitions']
 
 
 
@@ -32,30 +43,41 @@ class TagLabelViewSet(viewsets.ModelViewSet):
     queryset = TagLabel.objects.all()
     serializer_class = TagLabelSerializer
 
-    def retrieve(self, request, pk=None):
+    def get_queryset(self):
         queryset = TagLabel.objects.all()
-        lang= request.GET['locale'] if 'locale' in request.GET else request.LANGUAGE_CODE
-        
-        if not lang == "any":
-            queryset=queryset.filter(isocode=lang)
-        
-        tag=get_object_or_404(queryset,pk=pk)
-        
-        serializer = TagLabelSerializer(tag,context={'request': request})
-        return Response(serializer.data)
-    
-    def list(self, request):
-        queryset = TagLabel.objects.all()
-        lang= request.GET['locale'] if 'locale' in request.GET else request.LANGUAGE_CODE
-        
-        if not lang == "any":
+        lang = self.request.query_params.get('lang', self.request.LANGUAGE_CODE)
+        if lang != "any":
             queryset=queryset.filter(language__isocode=lang)
-        
-        serializer = TagLabelSerializer(queryset,many=True,context={'request': request})
-        return Response(serializer.data)
+        return queryset
 
-    @decorators.action(methods=['patch'],detail=True)
+    # def retrieve(self, request, pk=None):
+    #     queryset = TagLabel.objects.all()
+    #     lang= request.GET['locale'] if 'locale' in request.GET else request.LANGUAGE_CODE
+        
+    #     if not lang == "any":
+    #         queryset=queryset.filter(isocode=lang)
+        
+    #     tag=get_object_or_404(queryset,pk=pk)
+        
+    #     serializer = TagLabelSerializer(tag,context={'request': request})
+    #     return Response(serializer.data)
+    
+    # def list(self, request):
+    #     queryset = TagLabel.objects.all()
+    #     lang= request.GET['locale'] if 'locale' in request.GET else request.LANGUAGE_CODE
+        
+    #     if not lang == "any":
+    #         queryset=queryset.filter(language__isocode=lang)
+        
+    #     serializer = TagLabelSerializer(queryset,many=True,context={'request': request})
+    #     return Response(serializer.data)
+
+    @decorators.action(methods=['post'],detail=True)
     def add_definition(self,request):
+        label = self.get_object()
+        Tag.get(id=request.data)
+        Tag.labels.add(label)
+        Tag.save()
         pass
 
 
