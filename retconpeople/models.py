@@ -31,7 +31,7 @@ class Person(models.Model):
     first_name=sharedstrings.SharedStringField(blank=True,null=True)
     last_name=sharedstrings.SharedStringField()
     pseudonyms = models.ManyToManyField("sharedstrings.Strings",related_name="+",blank=True)
-    description=models.CharField(max_length=255,blank=True)
+    description=models.CharField(max_length=512,blank=True)
     merged_into=models.ForeignKey("self",related_name="merged_from",on_delete=models.DO_NOTHING,null=True,blank=True)
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
     ambiguous_tags=models.ManyToManyField("sharedstrings.Strings",blank=True)
