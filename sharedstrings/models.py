@@ -140,3 +140,32 @@ class SharedStringField(models.ForeignKey):
         if isinstance(value, str):
             value, created = Strings.objects.get_or_create(name=value)
         return super().to_python(value)
+    
+    def get_lookup(self, lookup_name):
+        if lookup_name == 'icontains':
+            return SurrogateIContainsStringLookup
+        if lookup_name == 'contains':
+            return SurrogateContainsStringLookup
+        
+        else:
+            return super().get_lookup(lookup_name)
+        # surrogate=Strings._meta.get_field('name')
+        # l=surrogate.get_lookup(lookup_name)
+        # return l
+class SurrogateIContainsStringLookup(models.lookups.In):
+    
+    def __init__(self,lhs,rhs, *kwargs):
+        self.params=[]
+        rhs= [x.id for x in Strings.objects.filter(name__icontains=rhs).distinct()]
+        return super().__init__(lhs,rhs,*kwargs)
+
+    lookup_name = 'icontains'
+
+class SurrogateContainsStringLookup(models.lookups.In):
+    
+    def __init__(self,lhs,rhs, *kwargs):
+        self.params=[]
+        rhs= [x.id for x in Strings.objects.filter(name__icontains=rhs).distinct()]
+        return super().__init__(lhs,rhs,*kwargs)
+
+    lookup_name = 'contains'
