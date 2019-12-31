@@ -111,7 +111,7 @@ class Episode(CreativeWork):
     #End mediums
 
 
-    part_of=models.ForeignKey("Series",on_delete=models.DO_NOTHING,null=True)
+    part_of=models.ForeignKey("Series",on_delete=models.DO_NOTHING,null=True,blank=True)
     order_in_series=models.PositiveSmallIntegerField(null=True,blank=True)
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
 
@@ -135,10 +135,13 @@ class AudioBook(CreativeWork):
     reading_of=models.ForeignKey("Book",on_delete=models.DO_NOTHING)
 
 class Movie(Episode):
-    pass
+    medium=Episode.MOVIE
+    class Meta:
+        proxy=True
 
-class TVEpisode(Movie):
-    pass
+class TVEpisode(Episode):
+    class Meta:
+        proxy=True
 
 class Software(Episode):
     SFT_PLATFORM_HELP='Platforms this sofware runs on including consoles and operating systems'
@@ -148,8 +151,20 @@ class Software(Episode):
 class WebVideo(Episode):
     pass
 
-class Actor(people.Person):
-    acted_in = models.ManyToManyField("Episode")
+class Franchise(models.Model):
+    name = sharedstrings.SharedStringField()
+    description = models.CharField(max_length=64)
+
+class Character(models.Model):
+    name = sharedstrings.SharedStringField()
+    description = models.CharField(max_length=64)
+    franchise = models.ForeignKey("Franchise",on_delete=models.SET_NULL,null=True,blank=True)
+
+
+class Portrayal(models.Model):
+    episode = models.ForeignKey("Episode",on_delete=models.PROTECT)
+    actor = models.ForeignKey("retconpeople.Person",on_delete=models.PROTECT)
+    role = models.ForeignKey("Character",on_delete=models.SET_NULL,null=True,blank=True)
 
 #class Author(people.Person):
 
