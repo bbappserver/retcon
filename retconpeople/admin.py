@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django import forms
 from django.db.models import Q
 from .models import UserName,UserNumber,Person,Website
 # Register your models here.
@@ -29,11 +30,13 @@ class PersonAdmin(admin.ModelAdmin):
     exclude=("external_representation",)
     search_fields=['first_name','last_name','pseudonyms']
     autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","merged_into"]
+    readonly_fields = ('uuid',)
     
     inlines = [
         UserNameInline,UserNumberInline,ExternalPersonContentInline
     ]
     order_by=('last_name','first_name')
+    description = forms.CharField( widget=forms.Textarea )
 
     def get_search_results(self, request, queryset, search_term):
         if search_term == '':

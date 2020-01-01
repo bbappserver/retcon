@@ -2,6 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from sharedstrings import models as sharedstrings
 from semantictags import models as semantictags
+import uuid
 # Create your models here.
 # class Strings(models.Model):
 #     id = models.AutoField(primary_key=True)
@@ -35,6 +36,8 @@ class Person(models.Model):
     merged_into=models.ForeignKey("self",related_name="merged_from",on_delete=models.DO_NOTHING,null=True,blank=True)
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
     ambiguous_tags=models.ManyToManyField("sharedstrings.Strings",blank=True)
+
+    uuid=models.UUIDField(default=uuid.uuid4,blank=True,unique=True)
 
     external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
     canonicalize=False
@@ -140,6 +143,11 @@ class Person(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+    
+    def pull_associated_works(self):
+        raise NotImplementedError()
+    def pull_associated_companies(self):
+        raise NotImplementedError()
 
 class UserName(models.Model):
     id = models.AutoField(primary_key=True)
