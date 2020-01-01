@@ -24,9 +24,16 @@ class Company(semantictags.Taggable):
 
     parent=models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,blank=True,related_name="children")
     website = models.ForeignKey("retconpeople.Website",on_delete=models.DO_NOTHING,null=True,blank=True)
+    external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
 
     def __str__(self):
         return self.name.name
+    
+    def pull_associated_people(self):
+        raise NotImplementedError()
+    
+    def pull_associated_works(self):
+        raise NotImplementedError()
 
 class Title(models.Model):
     name = models.CharField(max_length=64)
