@@ -9,6 +9,13 @@ class ExternalContentInline(admin.TabularInline):
     verbose_name_plural="External URLs"
     autocomplete_fields=["contentresource"]
 
+# class ExternalContentInline(admin.TabularInline):
+#     model=CreativeWork.files.through
+#     extra=1
+#     verbose_name="Files"
+#     verbose_name_plural="Files"
+#     #autocomplete_fields=["contentresource"]
+
 
 class RelatedSeriesInline(admin.TabularInline):
     model=RelatedSeries
@@ -36,7 +43,9 @@ class SeriesAdmin(admin.ModelAdmin):
 
 @admin.register(Movie)
 class MovieAdmin(TaggableAdminMixin):
-    autocomplete_fields=['tags','ambiguous_tags','part_of']
+    autocomplete_fields=['tags','ambiguous_tags','part_of','created_by']
+    exclude=["external_representation",'medium']
+    inlines=(LocalizedTitleInline,ExternalContentInline)
 
 @admin.register(Episode)
 class EpisodeAdmin(TaggableAdminMixin):

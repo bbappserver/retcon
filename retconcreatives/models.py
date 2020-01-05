@@ -141,8 +141,14 @@ class Comicbook(Book):
 class AudioBook(CreativeWork):
     reading_of=models.ForeignKey("Book",on_delete=models.DO_NOTHING)
 
+class MovieManager(models.Manager):
+    def get_queryset(self):
+        return super(MovieManager, self).get_queryset().filter(
+            medium=Episode.MOVIE)
+
 class Movie(Episode):
     medium=Episode.MOVIE
+    objects=MovieManager()
     class Meta:
         proxy=True
 
