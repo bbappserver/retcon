@@ -9,12 +9,12 @@ class ExternalContentInline(admin.TabularInline):
     verbose_name_plural="External URLs"
     autocomplete_fields=["contentresource"]
 
-# class ExternalContentInline(admin.TabularInline):
-#     model=CreativeWork.files.through
-#     extra=1
-#     verbose_name="Files"
-#     verbose_name_plural="Files"
-#     #autocomplete_fields=["contentresource"]
+class FilesInline(admin.TabularInline):
+    model=CreativeWork.files.through
+    extra=1
+    verbose_name="Files"
+    verbose_name_plural="Files"
+    autocomplete_fields=["managedfile"]
 
 
 class RelatedSeriesInline(admin.TabularInline):
@@ -37,21 +37,21 @@ class SeriesAdmin(admin.ModelAdmin):
     search_fields=['name']
     autocomplete_fields=['tags','ambiguous_tags','produced_by','published_by','created_by','parent_series']
     #readonly_fields = ('related_from_series',)
-    exclude=["external_representation"]
-    inlines=(RelatedSeriesInline,LocalizedTitleInline,ExternalContentInline)
+    exclude=["external_representation","files"]
+    inlines=(RelatedSeriesInline,LocalizedTitleInline,ExternalContentInline,FilesInline)
 
 
 @admin.register(Movie)
 class MovieAdmin(TaggableAdminMixin):
     autocomplete_fields=['tags','ambiguous_tags','part_of','created_by']
     exclude=["external_representation",'medium']
-    inlines=(LocalizedTitleInline,ExternalContentInline)
+    inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline)
 
 @admin.register(Episode)
 class EpisodeAdmin(TaggableAdminMixin):
     autocomplete_fields=['tags','ambiguous_tags','part_of','published_by','created_by']
-    exclude=["external_representation"]
-    inlines=(LocalizedTitleInline,ExternalContentInline)
+    exclude=["external_representation","files"]
+    inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline)
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
@@ -62,6 +62,6 @@ class CompanyAdmin(admin.ModelAdmin):
 @admin.register(Illustration)
 class IllustrationAdmin(admin.ModelAdmin):
         autocomplete_fields=['tags','ambiguous_tags','published_by','illustrators','created_by']
-        exclude=["external_representation"]
-        inlines=(LocalizedTitleInline,ExternalContentInline)
+        exclude=["external_representation","files"]
+        inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline)
 

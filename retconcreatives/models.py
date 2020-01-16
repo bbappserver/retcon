@@ -48,6 +48,7 @@ class CreativeWork(semantictags.Taggable):
     # representes_collections = models.ManyToManyField('retconstorage.Collection')
     # representes_remotables = models.ManyToManyField('retconremotables.RemoteEntity')
     external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
+    files= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
 
     def local_name(self,language=django.utils.translation.get_language()):
         try:
