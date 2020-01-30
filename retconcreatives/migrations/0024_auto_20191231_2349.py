@@ -4,6 +4,8 @@ from django.db import migrations, models
 import django.db.models.deletion
 import sharedstrings.models
 
+def proxify_movies_and_tv():
+    raise NotImplementedError
 
 class Migration(migrations.Migration):
 
@@ -57,6 +59,7 @@ class Migration(migrations.Migration):
         migrations.DeleteModel(
             name='Actor',
         ),
+        migrations.RunPython(proxify_movies_and_tv),
         migrations.DeleteModel(
             name='Movie',
         ),
