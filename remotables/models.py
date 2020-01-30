@@ -24,6 +24,11 @@ class ContentResource(Resource):
     content_last_modified = models.DateTimeField(null=True,blank=True)
     content_last_fetched = models.DateTimeField(null=True,blank=True)
 
+# class HTTPResource(ContentResource):
+#     http_verbs={"GET":0,"POST":1}
+#     verb = models.PositiveSmallIntegerField(default=0,choices=http_verbs)
+#     request_body= models.CharField(max_length=2000,help_text="Body text to be sent,usually used to perform a post")
+
 class EphemeralResource(Resource):
     '''Lots of URLS are temporary tokens valid for a short period put those here.
     If you aren't sure whether something is ephemeral use a contentURL as ephemeralURLS may be garbage collected.

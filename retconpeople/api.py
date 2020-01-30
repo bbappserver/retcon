@@ -7,6 +7,7 @@ from .models import Person,UserName,UserNumber,Website
 from sharedstrings.api import StringsField
 from semantictags.api import TagSerializer,TagLabelSerializer
 from django.shortcuts import redirect,get_object_or_404
+from django.db import transaction
 import json
 
 from rest_framework import renderers
@@ -46,6 +47,7 @@ class UsernameViewSet(viewsets.ModelViewSet):
     """
     queryset = UserName.objects.all()
     serializer_class = UsernameSerializer
+
 
 class UserNumberSerializer(serializers.HyperlinkedModelSerializer):
     website = serializers.SlugRelatedField(
@@ -102,33 +104,7 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
         # Profile.objects.create(user=user, **profile_data)
         return user
     
-    @action(detail=True, methods=['get','post','delete'])
-    def users(self, request, pk=None,format=None):
-        person = self.get_object()
-        
-        if request.method == 'get':
-            l=[]
-            l.update(self.usernames)
-            l.update(self.user_numbers)
-            return Response(l)
-        elif request.method == 'post':
-            l=request.body
-            for e in l:
-                if(hasattr(e,'name')):
-                    person.usernames.add(e)
-                else:
-                    person.user_numbers.add(e)
-            person.save()
-            return Response([],status=200)
-        elif request.method == 'delete':
-            l=request.body
-            for e in l:
-                if(hasattr(e,'name')):
-                    person.usernames.remove(e)
-                else:
-                    person.user_numbers.remove(e)
-            person.save()
-            return Response([],status=200)
+    
 
             
     # def update(self, instance, validated_data):
@@ -174,6 +150,66 @@ class PersonViewSet(viewsets.ModelViewSet):
             return redirect(redirect_url,permenant=True)
         serializer = PersonSerializer(user,context={'request': request})
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['get','post','delete'])
+    def users(self, request, pk=None,format=None):
+        
+        person = self.get_object()
+        
+        try:
+            with transaction.atomic():
+                if request.method == 'GET':
+                    l=[]
+                    l.extend(LeafUsernameSerializer(person.usernames,many=True).data)
+                    l.extend(LeafUserNumberSerializer(person.user_numbers,many=True).data)
+                    return Response(l)
+                elif request.method == 'POST':
+                    l=request.data
+                    for e in l:
+                        if('name' in e):
+                            u = LeafUsernameSerializer(data=e)
+                            if u.is_valid(): 
+                                u=u.save()
+                                person.usernames.add(u)
+                            else:
+                                raise serializers.ValidationError()
+                        else:
+                            u=LeafUserNumberSerializer(data=e)
+                            if u.is_valid(): 
+                                u=u.save()
+                                person.user_numbers.add(u)
+                            else:
+                                raise serializers.ValidationError()
+                    person.save()
+                    return Response([],status=200)
+                elif request.method == 'DELETE':
+                    l=request.data
+                    for e in l:
+                        if('name' in e):
+                            u = LeafUsernameSerializer(data=e)
+                            if u.is_valid(): 
+                                u=UserName.objects.get(**u.validated_data)
+                            person.usernames.remove(u)
+                            u.delete()
+                        else:
+                            u = LeafUserNumberSerializer(data=e)
+                            if u.is_valid(): 
+                                u=UserNumber.objects.get(**u.validated_data)
+                            person.usernames.remove(u)
+                            u.delete()
+                    person.save()
+                    return Response([],status=200)
+        except serializers.ValidationError as e:
+            return Response([],status=401)
+        except Exception as e:
+            return Response([],status=501)
+
+    def create(self, request):
+        d=request.data
+        if 'usernames' in d or 'user_numbers' in d:
+            return Response('Please user POST /people/<pk>/users to add users after creation.',status=401)
+        return super().create(request)
+            
 
 
 class WebsiteSerializer(serializers.HyperlinkedModelSerializer):

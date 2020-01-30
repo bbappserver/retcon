@@ -68,7 +68,13 @@ class Retcon:
 
 # if __name__=="main":
 # c=Retcon()
-# c.login('root','testpass')
+c.login('root','testpass')
+data=[
+    # {'website':'twitter.com','name':'fakeuser1'},
+    # {'website':'twitter.com','name':'fakeuser2'},
+    {'website':'twitter.com','number':100},
+]
+c.post("http://127.0.0.1:8000/api/people/2/users/",json=data)
 # #    s=c.SharedString(id=1).get_or_create()
 # # s.name="com"
 # # s.save()

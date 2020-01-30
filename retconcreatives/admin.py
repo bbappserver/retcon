@@ -43,8 +43,8 @@ class SeriesAdmin(admin.ModelAdmin):
 
 @admin.register(Movie)
 class MovieAdmin(TaggableAdminMixin):
-    autocomplete_fields=['tags','ambiguous_tags','part_of','created_by']
-    exclude=["external_representation",'medium']
+    autocomplete_fields=['tags','ambiguous_tags','part_of','created_by','published_by']
+    exclude=["external_representation",'medium','files']
     inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline)
 
 @admin.register(Episode)
@@ -57,6 +57,7 @@ class EpisodeAdmin(TaggableAdminMixin):
 class CompanyAdmin(admin.ModelAdmin):
     autocomplete_fields=['name','tags','parent','ambiguous_tags','website']
     search_fields=['name','website__name']
+    exclude=["external_representation"]
     pass
 
 @admin.register(Illustration)

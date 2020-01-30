@@ -35,6 +35,9 @@ class Company(semantictags.Taggable):
     def pull_associated_works(self):
         raise NotImplementedError()
 
+    class Meta:
+        ordering=['name__name']
+
 class Title(models.Model):
     name = models.CharField(max_length=64)
     language = models.ForeignKey("sharedstrings.Language",on_delete=models.SET_NULL,null=True,related_name="+")

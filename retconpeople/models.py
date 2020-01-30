@@ -176,3 +176,20 @@ class UserNumber(models.Model):
     
     def __str__(self):
         return str(self.number)
+
+# class UserIdentifierManager(models.Manager):
+#     pass
+
+# class UserIdentifier(models.Model):
+#     objects= UserIdentifierManager()
+#     def get_usernumber(self):
+#         try:
+#             name = int(self.name)
+#             return name
+#         except:
+#             return False
+#         raise Exception("It shouldn't be possible to reach this line")
+        
+
+#     class Meta:
+#         unmanaged=True
