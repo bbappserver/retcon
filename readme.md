@@ -1,6 +1,6 @@
 # Retcon
 ## Why is it called retcon
- Retcon means retroactive continuity, I needed a name that decribed function and would not conflict iwth other app names so I choe retcon.
+ Retcon means retroactive continuity, I needed a name that decribed function and would not conflict with other app names so I choe retcon.
 
 ## What does it do?
 [Hand waving] Whatever I want.  But mostly it is designed to track meta information files and remote representations of creative works and personalities.  Think of it as the IMDB for niche hobbies.
@@ -16,7 +16,7 @@ python3 ./manage.py importlang #Create language models from system locales
 python3 ./manage.py createsuperuser #Create the administrative user
 ```
 ### Running
-If you updated you need to migrate to bring the database upt to date.
+If you updated you need to migrate to bring the database up to date.
 ```
 python3 ./manage.py migrate
 ```
@@ -30,7 +30,16 @@ http://localhost:8000/admin
 ```
 For machine friendly interaction see
 ```
-http://localhost:8000/API
+http://localhost:8000/api
+```
+
+To export a list of users for hydrus
+```
+http://localhost:8000/api/site/<id>/users.txt
+```
+e.g.
+```
+http://localhost:8000/api/site/1/users.txt
 ```
 
 Models and API are subject to change without notice.  I recommend you abstract out any access to them if you write something that interacts with the system.
