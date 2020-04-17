@@ -149,7 +149,34 @@ class Person(models.Model):
     def pull_associated_companies(self):
         raise NotImplementedError()
 
-class UserName(models.Model):
+class UserLabel(models.Model):
+    #TODO django3
+    # class Roles(models.IntegerChoices):
+    #     SFW=0
+    #     NSFW=1
+    #     NSFW_EXTRME=2
+    # class Status(models.IntegerChoice):
+    #     ACTIVE=0
+    #     INNACTIVE=1
+    #     DEAD=2
+    ROLES=(
+        (None,""),
+        (0,"SFW"),
+        (1,"NSFW"),
+        (2,"NSFW Extreme")
+    )
+    STATUS=(
+        (None,""),
+        (0,"Active"),
+        (1,"Inactive"),
+        (2,"Dead")
+    )
+    status=models.IntegerField(choices=STATUS,null=True,default=None,blank=True)
+    role=models.IntegerField(choices=ROLES,null=True,default=None,blank=True)
+    class Meta:
+        abstract=True
+
+class UserName(UserLabel):
     id = models.AutoField(primary_key=True)
     website=models.ForeignKey("Website",related_name="user_names",on_delete=models.PROTECT)
     name = sharedstrings.SharedStringField()
@@ -165,7 +192,7 @@ class UserName(models.Model):
     class Meta:
         unique_together = ['website', 'name']
 
-class UserNumber(models.Model):
+class UserNumber(UserLabel):
     id = models.AutoField(primary_key=True)
     website=models.ForeignKey("Website",related_name="user_numbers",on_delete=models.CASCADE)
     number = models.BigIntegerField()
