@@ -93,6 +93,7 @@ class RelatedSeries(models.Model):
     from_series=models.ForeignKey("Series",related_name='based_off',on_delete=models.DO_NOTHING)
     relationship=models.PositiveSmallIntegerField(choices=RELATIONS,help_text='e.g. <to_work> is a sequel to <from_work>')    
 
+
 class Episode(CreativeWork):
 
     #Mediums, sorted approximatly by year introduced
@@ -177,6 +178,9 @@ class Character(models.Model):
     name = sharedstrings.SharedStringField()
     description = models.CharField(max_length=64)
     franchise = models.ForeignKey("Franchise",on_delete=models.SET_NULL,null=True,blank=True)
+
+    def __str__(self):
+        return "{}:{}".format(self.name,self.description)
 
 
 class Portrayal(models.Model):
