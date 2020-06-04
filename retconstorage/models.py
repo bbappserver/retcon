@@ -7,9 +7,12 @@ import binascii
 class Filetype(models.Model):
     MIME = models.CharField(max_length=64)
     UTI= models.CharField(max_length=64,null=True,blank=True)
-
+    
+class NamedFile(models.Model):
+    name=models.CharField(max_length=1024,null=True)
+    inode=models.PositiveIntegerField(null=True,blank=True,default=None)
+    identity=models.ForeignKey("ManagedFile",on_delete=models.CASCADE,null=True)
 class ManagedFile(models.Model):
-    #file = HashFileField()
     md5=models.BinaryField(null=True,blank=True)
     sha256=models.BinaryField(null=True,blank=True)
     filetype = models.ForeignKey("Filetype",on_delete=models.PROTECT,null=True,blank=True)
@@ -42,6 +45,7 @@ class Collection(models.Model):
     parents = models.ManyToManyField("self",blank=True,related_name="children")
 
 class CollectionMetadata(models.Model):
+    '''Optional minimal metadata for this collection'''
     name= models.CharField(max_length=64)
     description= models.CharField(max_length=256)
     collection = models.OneToOneField("Collection",on_delete=models.CASCADE,related_name='metadata')
