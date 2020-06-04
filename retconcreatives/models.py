@@ -128,6 +128,9 @@ class Episode(CreativeWork):
     description = models.TextField(null=True,blank=True)
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
 
+    #cover_images= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
+    #promotional_images= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
+
     class Meta:
         unique_together=[('part_of','order_in_series')]
 
