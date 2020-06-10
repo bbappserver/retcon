@@ -1,34 +1,26 @@
 from django.core.management.base import BaseCommand, CommandError
-from retconstorage.models import NamedFile, ManagedFile
-from django.db import transaction
+from retconstorage.models import NamedFile, ManagedFile,Filetype
 from retcon import settings
+from django.db import transaction
 import os
 import sys
 import os.path
 import stat
 import hashlib
 import progress.bar
+import filetype
 
 from multiprocessing import Queue, Process
 from queue import Empty, Full
 
 
-def hashfile(path):
-    BUF_SIZE = 536870912  # lets read stuff in 0.5GiB chunks!
-
-    md5 = hashlib.md5()
-    sha256 = hashlib.sha256()
-
-    with open(path, 'rb') as f:
-        while True:
-            data = f.read(BUF_SIZE)
-            if not data:
-                break
-            md5.update(data)
-            sha256.update(data)
-            del data  # explicitly dispose of buffer
-    return (md5.digest(), sha256.digest())
-
+def identifyFile(prefix,work):
+    realpath = os.path.join(prefix, work)
+    kind = filetype.guess(realpath)
+    MIME='application/octet-stream'
+    if kind is not None:
+        MIME=kind.mime
+    return MIME
 
 def hash_worker(prefix, in_q: Queue, out_q: Queue):
     try:
@@ -38,34 +30,32 @@ def hash_worker(prefix, in_q: Queue, out_q: Queue):
                 break
             else:
                 try:
-                    realpath = os.path.join(prefix, work)
-                    md5, sha256 = hashfile(realpath)
-
-                    out_q.put((work, md5, sha256))
+                    MIME=identifyFile(prefix,work)
+                    out_q.put((work, MIME))
                 except FileNotFoundError:
                     out_q.put(None)
     except KeyboardInterrupt:
         pass  # Just supress keyboard interrupt vomit if the parent is killed
 
-
+# c=models.Filetype.objects.get(MIME='application/octet-stream')
+# b=models.ManagedFile.objects.filter(filetype__MIME='application/octet-stream"')
+# b.update(filetype=c)
+# models.Filetype.objects.get(MIME='application/octet-stream"').delete()
 def collect_result(t):
     # If there was a problem processing a file it will come down as null
     if t is None:
         return
-    name, md5, sha256 = t
+    name, MIME = t
     with transaction.atomic():
         nf = NamedFile.objects.filter(name=name)[0]
-
-        mf = None
-        mfs = ManagedFile.objects.filter(sha256=sha256)
-        if mfs.count() < 1:
-            mf = ManagedFile(sha256=sha256, md5=md5)
+        mf=nf.identity
+        if mf is not None :
+            ft,created= Filetype.objects.get_or_create(MIME=MIME)
+            mf.filetype=ft
+            if created:
+                ft.save()
             mf.save()
-        else:
-            mf = mfs[0]
 
-        nf.identity = mf
-        nf.save()
 
 
 class SlowBar(progress.bar.Bar):
@@ -121,14 +111,13 @@ class SlowBar(progress.bar.Bar):
 
 
 class Command(BaseCommand):
-    help = 'Calculate hashes for NamedFile paths and attach them as identitites to named fiels'
+    help = 'Identify files with MIME type'
 
     def add_arguments(self, parser):
         pass
         # parser.add_argument('root', nargs=1, type=str)
 
     def handle(self, *args, **options):
-
         try:
             prefix = settings.NAMED_FILE_PREFIX
             out_q = Queue()
@@ -144,13 +133,26 @@ class Command(BaseCommand):
                 p.start()
                 proc.append(p)
             print('Fetch names')
-            nfs = NamedFile.objects.filter(identity=None)
+            mfs = ManagedFile.objects.filter(filetype=None)
             i = 0
             processed = 0
             print('Load names')
-            bar = SlowBar('Processing', max=nfs.count())
-            for nf in nfs:
-
+            bar = SlowBar('Processing', max=mfs.count())
+            for mf in mfs:
+                try:
+                    nf=NamedFile.objects.filter(identity=mf)[0]
+                except:
+                    bar.next()
+                    continue
+        #UNcomment for single proc veriosn (debug)
+        #         MIME= identifyFile(prefix,nf.name)
+        #         collect_result((nf.name,MIME))
+        #         bar.next()
+        #     bar.finish()
+        # except KeyboardInterrupt:
+        #     pass
+        #BEGIN multiproc version
+                #print("Dispatch{}".format(nf.name))
                 failed = True
                 while failed:
                     try:

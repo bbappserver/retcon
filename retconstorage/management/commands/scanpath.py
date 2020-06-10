@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
 from retconstorage.models import NamedFile
-from django.conf.locale import LANG_INFO
 from django.db import transaction
 import os,sys
 import os.path
@@ -8,7 +7,7 @@ import stat
 import progress.spinner
 
 class Command(BaseCommand):
-    help = 'Imports language codes and names from django.conf.locale.LANG_INFO'
+    help = 'Scan files at the specified path and add them as path relative to prefix'
 
     def add_arguments(self, parser):
         parser.add_argument('root', nargs=1, type=str)
