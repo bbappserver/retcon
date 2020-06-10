@@ -68,10 +68,40 @@ class CreativeWork(semantictags.Taggable):
 
 
 class Series(CreativeWork):
+
+    #Mediums, sorted approximatly by year introduced
+    ANTHOLOGY=0
+    BOOK=1 #Any written media that is not an anthology
+    AUDIO=2 #Songs to radioplays
+    COMIC_BOOK=3 #Includes manga
+    MOVIE=4 #Self contained film
+    TV=5 #Anthology of film meant for broadcast
+    SOFTWARE=6 #Software which is not explcitly a video game
+    VIDEO_GAME=7
+    WEBCOMIC=8 #Comics published as a web anthology
+    WEBSERIES=9 #e.g. a series of youtube videos
+    CARTOON=10
+    WEBCARTOON=11
+    MEDIUM_CHOICES = [
+        (ANTHOLOGY,"Anthology"),
+        (AUDIO,"Audio"),
+        (COMIC_BOOK,"Comic book / Manga"),
+        (BOOK,"Book"),
+        (MOVIE,"Movie"),
+        (SOFTWARE,"Software"),
+        (TV,"Television"),
+        (CARTOON,"Cartoon / Anime"),
+        (VIDEO_GAME,"Video Game"),
+        (WEBCOMIC,"Webcomic"),
+        (WEBSERIES,"Webseries"),
+        (WEBCARTOON,"Web Cartoon")
+    ]
+
     parent_series = models.ForeignKey("self",blank=True,null=True,on_delete=models.PROTECT,related_name='child_series')
     related_series = models.ManyToManyField("self", through='RelatedSeries',symmetrical=False,through_fields=('from_series', 'to_series'),related_name='related_from_series')
 
     produced_by = models.ManyToManyField("Company",blank=True,related_name='produced')
+    medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES,null=True,blank=True)
     
 
     def __str__(self):
@@ -197,3 +227,13 @@ class Portrayal(models.Model):
     #This is only good for fuzzy authorship, and sould ideally not benecessary so we'll leave 
     # It commented out until we're sure there is a usecase.
     #authorshipCollection = models.OneToOneField('retconstorage.Collection')
+
+def manchesteri_to_ui(n,nibble_count):
+    acc=0
+    for i in range(nibble_count):
+        nibble= n >> (4*i) #shift into place the nybble high first
+        nibble= n & 0x0F #Mask all but the nybble
+        if nibble == 0xE:
+            #high is on the right so the right most nybble is 2^nibble_count
+            acc += 1 << (nibble_count-i)
+    return acc
