@@ -23,6 +23,7 @@ class ClientObject:
         return self
     
     def get(self):
+        self.pre_get()
         if self.id is None:
             raise NotImplementedError("TODO DRF filters")
         
@@ -32,14 +33,17 @@ class ClientObject:
             for k in d.keys():
                 setattr(self,k,d[k])
             return self
+            self.post_get()
         else:
             raise DoesNotExist()
+        self.post_get()
     
     def filter(self):
         '''TODO Not Implemented'''
         raise NotImplementedError("TODO DRF filters")
 
     def create(self):
+        self.pre_create()
         r=self.client.post(self.endpoint,data=self.as_dict())
         if r.status_code == 201:
             d=json.loads(r.text)
@@ -47,8 +51,10 @@ class ClientObject:
                 setattr(self,k,d[k])
         else:
             raise Exists()
+        self.post_create()
     
     def update(self):
+        self.pre_update()
         d=self.as_dict()
         if 'id' in d:
             del d['id']
@@ -56,6 +62,7 @@ class ClientObject:
 
         if r.status_code != 200:
             raise Exception(r.text)
+        self.post_update()
 
     @property
     def pk_url(self):
@@ -75,6 +82,21 @@ class ClientObject:
     def __str__(self):
         return str(json.dumps(self.as_dict()))
 
+    def pre_get(self):
+        pass
+    def post_get(self):
+        pass
+
+    def pre_create(self):
+        pass
+    def post_create(self):
+        pass
+
+    def pre_update(self):
+        pass
+    def post_update(self):
+        pass
+
 class DoesNotExist(Exception):
     pass
 
@@ -86,6 +108,8 @@ class MultipleRows(Exception):
 
 
 class Person(ClientObject):
+    '''Representation of a person record
+    TODO Hide the distinction between usernames and number'''
     endpoint="/api/people/"
     def __init__(self,client,
         id=None,
@@ -107,6 +131,13 @@ class Person(ClientObject):
         self.usernames=usernames,
         self.usernumbers=usernumbers
     
+    def add_identifiers(user_identifiers):
+        # data=[
+        # # {'website':'twitter.com','name':'fakeuser1'},
+        # # {'website':'twitter.com','name':'fakeuser2'},
+        # {'website':'twitter.com','number':100},]
+        # c.post("http://127.0.0.1:8000/api/people/2/users/",json=data)
+        raise NotImplementedError()
 
 class SharedString(ClientObject):
     endpoint="/api/strings/"

@@ -1,0 +1,71 @@
+digraph G {
+#rankdir=LR
+ranksep=.5
+ "Low\nStorage"[shape="diamond"]
+ node[shape="box"]
+ subgraph data
+ {
+     node[shape="oval"]
+     "Video Files"
+     "Raw Documents"
+     "Parsed Documents"
+     "Deduped Files"
+     "Internal Tags"
+     "User Requests"
+     "Timestamps"
+     "GIF / Ugoira"->"Video Files"
+ }
+ 
+ subgraph clusterparsed
+ {
+    node[shape="oval"]
+    "Tags"
+     "Description"
+     "Title"
+     "Files"
+ }
+ 
+ subgraph cluster_internalimg
+ {
+     node[shape="oval"]
+     "Semantic Tags"
+     "Total Rank"
+     "Other Data"
+     "Variants"
+     "Characters"
+     "Actors"
+     "Creators"
+     "Copyrights"
+     "Faces"
+ }
+
+"User Requests","Timestamps"->"Injest"
+"Injest Video Metadata"->{"Actor Identity","Video Metadata"}
+{"Faces","Actors"}->"Actor Identity"
+"Video Files"->"Video Metadata"
+
+ "Tag"->"Semantic Tags"
+ {"Title","Description"}->"Other Data"
+ 
+   "Raw Documents"->"Injest"->"Parsed Documents"->"Mirror"->{"Files","Tags","Title","Description"}
+   "Files"->{"Deduplicate"}->"Deduped Files"
+  "Deduped Files"->{"Tag","Appraise","Visual Deduplicate"}
+  "Visual Deduplicate"->{"Variants"->"Deduped Files"}
+  
+  "Tags"->{"Tag","Analyze Tags"}
+  "Internal Tags"->"Analyze Tags"->{"Characters","Actors","Creators","Copyrights"}
+  
+  "Faces"->"Analyze Faces"->{"Actors"}
+  "Variants"->"Analyze Image"->"Faces"
+  
+  "Files"->"Video Files"->"Frames"->{"Analyze Image","Visual Deduplicate"}
+  "Files"->"GIF / Ugoira"
+  
+  "Appraise"->"Total Rank"
+  {"Total Rank","Low\nStorage"}->"Drop Poor Appraisal"
+  {"Total Rank","Low\nStorage","Variants"}->"Drop low resolution HAVING count>1"
+  "Description"->"Analyze Description"->"Analyze Tags"
+  
+  "Semantic Tags"->"Reanalyze Tags"->"Analyze Tags"
+  "Description"->"Reanalyze Description"->"Analyze Description"
+}

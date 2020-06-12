@@ -57,6 +57,8 @@ user_settings=UserSettings(user_settings)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = user_settings.get('secret_key','yivn1%4z7rqcbccfa$^_e4oa!)+$bg3ce2ejh=mjti-19el=zs')
 ALLOWED_HOSTS = user_settings.get('allowed_hosts',[])
+NAMED_FILE_PREFIX = user_settings.get('named_file_prefix','/')
+MANAGED_FILE_PATH = user_settings.get('managed_file_path','/homes/retcon')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -80,6 +82,7 @@ INSTALLED_APPS = [
     'retconpeople',
     'retconcreatives',
     'remotables',
+    'retconstorage'
 ]
 
 MIDDLEWARE = [

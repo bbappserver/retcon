@@ -35,6 +35,9 @@ class Company(semantictags.Taggable):
     def pull_associated_works(self):
         raise NotImplementedError()
 
+    class Meta:
+        ordering=['name__name']
+
 class Title(models.Model):
     name = models.CharField(max_length=64)
     language = models.ForeignKey("sharedstrings.Language",on_delete=models.SET_NULL,null=True,related_name="+")
@@ -48,6 +51,7 @@ class CreativeWork(semantictags.Taggable):
     # representes_collections = models.ManyToManyField('retconstorage.Collection')
     # representes_remotables = models.ManyToManyField('retconremotables.RemoteEntity')
     external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
+    files= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
 
     def local_name(self,language=django.utils.translation.get_language()):
         try:
@@ -64,10 +68,40 @@ class CreativeWork(semantictags.Taggable):
 
 
 class Series(CreativeWork):
+
+    #Mediums, sorted approximatly by year introduced
+    ANTHOLOGY=0
+    BOOK=1 #Any written media that is not an anthology
+    AUDIO=2 #Songs to radioplays
+    COMIC_BOOK=3 #Includes manga
+    MOVIE=4 #Self contained film
+    TV=5 #Anthology of film meant for broadcast
+    SOFTWARE=6 #Software which is not explcitly a video game
+    VIDEO_GAME=7
+    WEBCOMIC=8 #Comics published as a web anthology
+    WEBSERIES=9 #e.g. a series of youtube videos
+    CARTOON=10
+    WEBCARTOON=11
+    MEDIUM_CHOICES = [
+        (ANTHOLOGY,"Anthology"),
+        (AUDIO,"Audio"),
+        (COMIC_BOOK,"Comic book / Manga"),
+        (BOOK,"Book"),
+        (MOVIE,"Movie"),
+        (SOFTWARE,"Software"),
+        (TV,"Television"),
+        (CARTOON,"Cartoon / Anime"),
+        (VIDEO_GAME,"Video Game"),
+        (WEBCOMIC,"Webcomic"),
+        (WEBSERIES,"Webseries"),
+        (WEBCARTOON,"Web Cartoon")
+    ]
+
     parent_series = models.ForeignKey("self",blank=True,null=True,on_delete=models.PROTECT,related_name='child_series')
     related_series = models.ManyToManyField("self", through='RelatedSeries',symmetrical=False,through_fields=('from_series', 'to_series'),related_name='related_from_series')
 
     produced_by = models.ManyToManyField("Company",blank=True,related_name='produced')
+    medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES,null=True,blank=True)
     
 
     def __str__(self):
@@ -88,6 +122,7 @@ class RelatedSeries(models.Model):
     to_series=models.ForeignKey("Series",on_delete=models.DO_NOTHING)
     from_series=models.ForeignKey("Series",related_name='based_off',on_delete=models.DO_NOTHING)
     relationship=models.PositiveSmallIntegerField(choices=RELATIONS,help_text='e.g. <to_work> is a sequel to <from_work>')    
+
 
 class Episode(CreativeWork):
 
@@ -120,7 +155,11 @@ class Episode(CreativeWork):
 
     part_of=models.ForeignKey("Series",on_delete=models.DO_NOTHING,null=True,blank=True)
     order_in_series=models.PositiveSmallIntegerField(null=True,blank=True)
+    description = models.TextField(null=True,blank=True)
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
+
+    #cover_images= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
+    #promotional_images= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
 
     class Meta:
         unique_together=[('part_of','order_in_series')]
@@ -141,8 +180,14 @@ class Comicbook(Book):
 class AudioBook(CreativeWork):
     reading_of=models.ForeignKey("Book",on_delete=models.DO_NOTHING)
 
+class MovieManager(models.Manager):
+    def get_queryset(self):
+        return super(MovieManager, self).get_queryset().filter(
+            medium=Episode.MOVIE)
+
 class Movie(Episode):
     medium=Episode.MOVIE
+    objects=MovieManager()
     class Meta:
         proxy=True
 
@@ -167,6 +212,9 @@ class Character(models.Model):
     description = models.CharField(max_length=64)
     franchise = models.ForeignKey("Franchise",on_delete=models.SET_NULL,null=True,blank=True)
 
+    def __str__(self):
+        return "{}:{}".format(self.name,self.description)
+
 
 class Portrayal(models.Model):
     episode = models.ForeignKey("Episode",on_delete=models.PROTECT)
@@ -179,3 +227,13 @@ class Portrayal(models.Model):
     #This is only good for fuzzy authorship, and sould ideally not benecessary so we'll leave 
     # It commented out until we're sure there is a usecase.
     #authorshipCollection = models.OneToOneField('retconstorage.Collection')
+
+def manchesteri_to_ui(n,nibble_count):
+    acc=0
+    for i in range(nibble_count):
+        nibble= n >> (4*i) #shift into place the nybble high first
+        nibble= n & 0x0F #Mask all but the nybble
+        if nibble == 0xE:
+            #high is on the right so the right most nybble is 2^nibble_count
+            acc += 1 << (nibble_count-i)
+    return acc

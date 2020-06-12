@@ -1,5 +1,5 @@
 *.db
 *.sqlite3
 *.pyc
-retcon/settings.py
 private-settings.json
+.vagrant
