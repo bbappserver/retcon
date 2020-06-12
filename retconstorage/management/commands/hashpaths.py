@@ -53,13 +53,21 @@ def collect_result(t):
     if t is None:
         return
     name, md5, sha256 = t
+
+    #we should definitely have gotten both hashes and if we didn't something went wrong
+    if sha256 is None or md5 is None:
+        return
+
     with transaction.atomic():
         nf = NamedFile.objects.filter(name=name)[0]
 
         mf = None
         mfs = ManagedFile.objects.filter(sha256=sha256)
         if mfs.count() < 1:
+            #Create new identity
             mf = ManagedFile(sha256=sha256, md5=md5)
+            #TODO supply prefix if this command ever accepts one other than the default
+            nf.size=nf.stat().st_size
             mf.save()
         else:
             mf = mfs[0]
