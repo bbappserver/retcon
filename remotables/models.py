@@ -22,6 +22,9 @@ class Resource(models.Model):
 class ContentResource(Resource):
     '''URLs which serve content often intended to remain the same for long periods of time or indefinitely'''
     content_last_modified = models.DateTimeField(null=True,blank=True)
+
+    #This field should not be updated unless the cotnent was fully fetched, that way entities which need to 
+    #reference the entity thes resource represents can be expnaded without needing to full expand this resource.
     content_last_fetched = models.DateTimeField(null=True,blank=True)
 
 # class HTTPResource(ContentResource):

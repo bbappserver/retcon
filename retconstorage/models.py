@@ -25,6 +25,33 @@ class NamedFile(models.Model):
     
     def get_readonly_fields(self, request, obj=None):
         return [f.name for f in self.model._meta.fields]
+    
+    def display_size(self):
+        if self.identity.size is None:
+            return "?"
+        return "{:.2f} MiB".format(self.identity.size/(1<<20))
+    def display_MIME(self):
+        return self.identity.filetype.MIME
+    
+    @property
+    def abspath(self,prefix=settings.NAMED_FILE_PREFIX):
+        return os.path.join(prefix,self.name)
+    
+    @property
+    def exists(self):
+        return os.path.exists(self.abspath)
+    
+    def stat(self,prefix=settings.NAMED_FILE_PREFIX):
+        return os.stat(self._abspath(prefix))
+
+    def _abspath(self,prefix=settings.NAMED_FILE_PREFIX):
+        return os.path.join(prefix,self.name)
+
+
+    class Meta:
+        unique_together=(
+            ("name","inode")
+        )
 
 class ManagedFile(models.Model):
     
@@ -36,37 +63,66 @@ class ManagedFile(models.Model):
         (STORAGE_STATUS_HAVE,'Have'),
         (STORAGE_STATUS_DELETED,'Deleted')
     )
-    md5=models.BinaryField(null=True,blank=True)
-    sha256=models.BinaryField(null=True,blank=True)
+    md5=models.BinaryField(null=True,blank=True,unique=True)
+    sha256=models.BinaryField(null=True,blank=True,unique=True)
     size=models.PositiveIntegerField(null=True,blank=True)
     storage_status=models.CharField(max_length=1,null=True,blank=True,choices=STORAGE_STATUS_CHOICES)
     retain_count=models.IntegerField(default=0,help_text="Positive indicates desire to keep, negative to delete,0=inbox")
     filetype = models.ForeignKey("Filetype",on_delete=models.PROTECT,null=True,blank=True,related_name='+')
     
     # def calculate_missing_hashes(self):
+    def robust_abspath(self):
+        '''Returns a tracked path or the first named file that exists'''
+        p=self.abspath
+        if os.path.exists(p):
+            return p
+        else:
+            for nf in self.names:
+                p = n.abspath
+                if os.path.exists(p):
+                    return p
+    
+    def robust_stat(self):
+        '''Return the stat structure for a tracked path or the first named file that exists'''
+        managed_path=self.abspath
+        #did it this way to save the work of calculating a lot of abs path since this could be called often
+        if os.path.exists(managed_path):
+            return os.stat(managed_path)
+        else:
+            for nf in self.names.all():
+                if nf.exists:
+                    return nf.stat()
+
+
+
+
     @property
     def abspath(self):
-        l_basename=self.sha.hex()
-        l_dirname=l_basename[3]
+        l_basename=self.sha256.hex()
+        l_dirname=l_basename[:3]
         return os.path.join(settings.MANAGED_FILE_PATH,l_dirname,l_basename)
 
+    @property
     def exists(self):
         e=os.path.exists(self.abspath)
-        if not exists and self.STORAGE_STATUS_HAVE== self.storage_status:
-            self.storage_status=self.STORAGE_STATUS_MISSING
-            self.save()
+        return e
+        # if not exists and self.STORAGE_STATUS_HAVE== self.storage_status:
+        #     self.storage_status=self.STORAGE_STATUS_MISSING
+        #     self.save()
 
+    @property
+    def isTracked(self):
+        return self.storage_status is not None
     def open(self,mode='rb'):
         HashStorage().open(self.abspath,mode=mode)
     
     def track(self):
-        if self.exists():
-            return
-        else:
-            os.link(self.names[0],self.abspath)
+        if not self.exists:
+            os.link(self.robust_abspath(),self.abspath)
+        self.storage_status=STORAGE_STATUS_HAVE 
 
     def delete(self):
-        if self.exists():
+        if self.exists:
             os.unlink(self.abspath)
         self.status=self.STORAGE_STATUS_DELETED
         self.save()
@@ -76,9 +132,6 @@ class ManagedFile(models.Model):
             os.unlink(f)
         self.delete()
     
-    @property
-    def exists(self):
-        HashStorage().exists(self.sha256)
     
     def __str__(self):
         # try:
@@ -113,3 +166,33 @@ class CollectionMetadata(models.Model):
     name= models.CharField(max_length=64)
     description= models.CharField(max_length=256)
     collection = models.OneToOneField("Collection",on_delete=models.CASCADE,related_name='metadata')
+
+# class PerceptualMatch(models.model):
+
+#     '''Storages for matches of images (sequences of length 1), and image sequences including animated gif and movies''' 
+#     MATCH_TYPE_EQ=0 #The sequences match
+#     MATCH_TYPE_A_ISSUBSETOF_B=1 #Sequence A is embeded in B
+#     MATCH_TYPE_A_ISSUPERSET_B=2 #Sequence B is embeded in A
+#     MATCH_TYPE_A_PREFIXES_B=3 #Sequence A doesn't overlap and then overlaps B
+#     MATCH_TYPE_A_SUFFIXES_B=4 #Sequence A overlaps and then doesn't overlap B
+#     MATCH_TYPE_A_PARTIALLY_PREFIXES_B=5 #Sequence A doesn't overlap and then partially overlaps B
+#     MATCH_TYPE_A_PARTIALLY_SUFFIXES_B=6 #Sequence A partially overlaps and then doesn't overlap B
+#     MATCH_TYPE_RANDOM_SUBSET=7 #The sequences seem overlapped in no descernable pattern
+    
+#     MATCH_TYPE_CHOICES=[]
+
+#     a=models.ForeignKey('ManagedFile')
+#     b=models.ForeignKey('ManagedFile')
+#     type=models.CharField(max_length=1,choices=MATCH_TYPE_CHOICES)
+# class PerceptualHash(Models.model):
+#     class Meta:
+#         abstract=True
+
+#TODO the order of a hash inside a video file doesn't matter, but if a number of dhahses for a
+#vide file, then proceed to narrow phase where you actually do a frame compare.
+
+# class DHash(Models.model):
+#     '''Perceptual hashes for broad phase perceptual matching
+#     Actual file contents should be evaluated to calculate perceptual match'''
+#     managed_file= models.ForeignKey("ManagedFile",on_delete=models.CASCADE,related_name='+')
+# #    hash= 

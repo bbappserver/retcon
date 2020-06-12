@@ -10,6 +10,7 @@ class FiletypeAdmin(admin.ModelAdmin):
 class NamedFileAdmin(admin.ModelAdmin):
     exclude=('identity',)
     list_filter = ('identity__filetype__MIME',)
+    list_display = ('name','display_size','display_MIME')
     def get_readonly_fields(self, request, obj=None):
         # all fields are readonly in admin
         return [f.name for f in self.model._meta.fields]
