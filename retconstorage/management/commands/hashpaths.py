@@ -156,9 +156,24 @@ class Command(BaseCommand):
             i = 0
             processed = 0
             print('Load names')
+            print(nfs.count())
             bar = SlowBar('Processing', max=nfs.count())
             for nf in nfs:
 
+                #If there is already a file with the same inode then they are the same
+                if nf.inode is not None:
+                    #check if there is a file with this inode and an already calculated identity
+                    onf=NamedFile.objects.filter(identity__isnull=False,inode=nf.inode)
+                    try:
+                        onf=onf[0]
+                        nf.identity=onf.identity
+                        nf.save()
+                        bar.next()
+                        processed+=1
+                        continue
+                    except:pass
+                
+                #Otherwise dispatch for hash calculation.
                 failed = True
                 while failed:
                     try:

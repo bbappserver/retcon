@@ -42,8 +42,14 @@ class Command(BaseCommand):
                     # Intentionally using filter since get raises exception
                     # and shouldn't do exceptions in atomic
                     if(not f.exists()):
-                        path = os.path.join(root, file)
-                        ino = os.lstat(path)[stat.ST_INO]
-                        nf = NamedFile(name=epath, inode=ino)
-                        nf.save()
+                        try:
+                            path = os.path.join(root, file)
+                            if sys.platform=='darwin':
+                                path=unicodedata.normalize('NFC', path)
+                            ino = os.lstat(path)[stat.ST_INO]
+                            nf = NamedFile(name=epath, inode=ino)
+                            nf.save()
+                        except:
+                            nf = NamedFile(name=epath)
+                            nf.save()
         spin.finish()

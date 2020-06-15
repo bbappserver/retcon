@@ -83,6 +83,6 @@ class Command(BaseCommand):
                 file.size = stat_t[stat.ST_SIZE]
                 #print("{} size={}".format(,file.size))
                 file.save()
-            except Exception as e:
-                print("Skipped file id={}, names=".format(file.id, [x.name for x in file.names.all()]))
+            except:
+                print("Skipped file id={}, names=".format(file.id, list(file.names.all())))
         bar.finish()

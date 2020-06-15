@@ -63,7 +63,7 @@ class SlowBar(progress.bar.Bar):
 
 
 class Command(BaseCommand):
-    help = 'Update emetadata for managed files, at predent this just gets size'
+    help = 'Remove hashes which do not represent a tracked file or a file on disk (likely created by a programming error)'
 
     def add_arguments(self, parser):
         # parser.add_argument('root', nargs=1, type=str)
@@ -73,16 +73,14 @@ class Command(BaseCommand):
 
         prefix = options['prefix'][0]
         skip_hidden_dir = True
-        crit = Q(size=None)
-        l=ManagedFile.objects.filter(crit)
+
+        l=ManagedFile.objects.all()
         bar = SlowBar(max=l.count())
         for file in l:
             bar.next()
             try:
-                stat_t = file.robust_stat()
-                file.size = stat_t[stat.ST_SIZE]
-                #print("{} size={}".format(,file.size))
-                file.save()
-            except Exception as e:
-                print("Skipped file id={}, names=".format(file.id, [x.name for x in file.names.all()]))
+                if not file.isTracked and file.names.count()<1:
+                    file.delete()
+            except:
+                print("Skipped file id={}, names=".format(file.id, list(file.names.all())))
         bar.finish()
