@@ -3,7 +3,11 @@ from sharedstrings.models import Strings
 from .storage import HashStorage
 from .fields import HashFileField
 from retcon import settings
-import binascii,os.path
+import binascii,os.path,unicodedata
+import sys
+is_macos = sys.platform=='darwin'
+
+
 # Create your models here.
 class Filetype(models.Model):
     MIME = models.CharField(max_length=64)
@@ -27,15 +31,35 @@ class NamedFile(models.Model):
         return [f.name for f in self.model._meta.fields]
     
     def display_size(self):
-        if self.identity.size is None:
+        if self.identity is None or self.identity.size is None:
             return "?"
         return "{:.2f} MiB".format(self.identity.size/(1<<20))
     def display_MIME(self):
+        if self.identity is None or self.identity.filetype is None:
+            return "?"
         return self.identity.filetype.MIME
     
+    def multiplicity(self):
+        if self.identity is None:
+            return "?"
+        n=self.identity.names.count()
+        return n if n>0 else "? 1"
+    def deduped_multiplicity(self):
+        if self.identity is None:
+            return "?"
+        n= len(set((x.inode for x in self.identity.names.all())))
+        return n if n>0 else "? 1"
+
+    def alternate_names(self):
+        return [x.name for x in self.identity.names.all()]
+
     @property
     def abspath(self,prefix=settings.NAMED_FILE_PREFIX):
-        return os.path.join(prefix,self.name)
+        p= os.path.join(prefix,self.name)
+        if is_macos:
+            return unicodedata.normalize('NFC', p)
+        else:
+            return unicodedata.normalize('NFD', p)
     
     @property
     def exists(self):
@@ -43,6 +67,9 @@ class NamedFile(models.Model):
     
     def stat(self,prefix=settings.NAMED_FILE_PREFIX):
         return os.stat(self._abspath(prefix))
+    
+    def unlink(self):
+        return os.unlink(self.abspath)
 
     def _abspath(self,prefix=settings.NAMED_FILE_PREFIX):
         return os.path.join(prefix,self.name)
@@ -121,17 +148,19 @@ class ManagedFile(models.Model):
             os.link(self.robust_abspath(),self.abspath)
         self.storage_status=STORAGE_STATUS_HAVE 
 
-    def delete(self):
+    def unlink(self):
         if self.exists:
             os.unlink(self.abspath)
         self.status=self.STORAGE_STATUS_DELETED
         self.save()
     
     def purge(self):
-        for f in self.names:
-            os.unlink(f)
-        self.delete()
+        for f in self.names.all():
+            f.unlink()
+        self.unlink()
     
+    def strnames(self):
+        return [x.name for x in self.names.all()]
     
     def __str__(self):
         # try:
