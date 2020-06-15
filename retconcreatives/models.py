@@ -66,6 +66,19 @@ class CreativeWork(semantictags.Taggable):
             return self.name
         return n
 
+    @classmethod
+    def fuzzy_search(cls,fuzzy_name):
+        '''Returns a dictionary of <Creativework.id,hit_count>'''
+        tokens=fuzzy_name.split(" ")
+        res={}
+        for t in tokens:
+            for x in cls.objects.filter(name__icontains=t):
+                if x.id in res:
+                    res[x]+=1
+                else:
+                    res[x]=1
+        return x
+
 
 class Series(CreativeWork):
 
@@ -228,12 +241,3 @@ class Portrayal(models.Model):
     # It commented out until we're sure there is a usecase.
     #authorshipCollection = models.OneToOneField('retconstorage.Collection')
 
-def manchesteri_to_ui(n,nibble_count):
-    acc=0
-    for i in range(nibble_count):
-        nibble= n >> (4*i) #shift into place the nybble high first
-        nibble= n & 0x0F #Mask all but the nybble
-        if nibble == 0xE:
-            #high is on the right so the right most nybble is 2^nibble_count
-            acc += 1 << (nibble_count-i)
-    return acc
