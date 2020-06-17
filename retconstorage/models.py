@@ -156,9 +156,20 @@ class ManagedFile(models.Model):
     
     def purge(self):
         for f in self.names.all():
-            f.unlink()
+            try:
+                f.unlink()
+            except FileNotFoundError:
+                pass
         self.unlink()
     
+    def retain(self):
+        self.retain_count+=1
+        self.save()
+    
+    def release(self):
+        se;f.retain_count-=1
+        self.save()
+
     def strnames(self):
         return [x.name for x in self.names.all()]
     
@@ -223,5 +234,5 @@ class CollectionMetadata(models.Model):
 # class DHash(Models.model):
 #     '''Perceptual hashes for broad phase perceptual matching
 #     Actual file contents should be evaluated to calculate perceptual match'''
-#     managed_file= models.ForeignKey("ManagedFile",on_delete=models.CASCADE,related_name='+')
-# #    hash= 
+#     value=BigIntegerField()
+#     managed_files= models.ManyToManyField("ManagedFile",related_name='+')
