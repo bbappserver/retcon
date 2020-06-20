@@ -62,6 +62,8 @@ class SeriesAdmin(admin.ModelAdmin):
 class EpisodeAdmin(TaggableAdminMixin):
     autocomplete_fields=['tags','ambiguous_tags','part_of','published_by','created_by']
     exclude=["external_representation","files"]
+    list_display=['preferred_name','name','published_on','publisher_names']
+    search_fields=['name','localized_titles__name','published_by__name']
     inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline,PortrayalInline)
 
 @admin.register(Company)

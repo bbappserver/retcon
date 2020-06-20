@@ -78,6 +78,9 @@ class CreativeWork(semantictags.Taggable):
                 else:
                     res[x]=1
         return x
+    
+    def publisher_names(self):
+        return [x.name for x in self.published_by.all()]
 
 
 class Series(CreativeWork):
