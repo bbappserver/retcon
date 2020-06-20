@@ -65,6 +65,13 @@ class EpisodeAdmin(TaggableAdminMixin):
     list_display=['preferred_name','name','published_on','publisher_names']
     search_fields=['name','localized_titles__name','published_by__name']
     inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline,PortrayalInline)
+    actions=['set_date_precision_to_year','set_date_precision_to_month','set_date_precision_to_day']
+    def set_date_precision_to_year(modeladmin, request, queryset):
+        queryset.all().update(published_on_precision=Episode.DATE_PRECISION_YEAR)
+    def set_date_precision_to_month(modeladmin, request, queryset):
+        queryset.all().update(published_on_precision=Episode.DATE_PRECISION_MONTH)
+    def set_date_precision_to_day(modeladmin, request, queryset):
+        queryset.all().update(published_on_precision=Episode.DATE_PRECISION_DAY)
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):

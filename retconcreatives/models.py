@@ -44,8 +44,19 @@ class Title(models.Model):
     creative_work= models.ForeignKey("CreativeWork",on_delete=models.CASCADE,related_name="localized_titles")
 
 class CreativeWork(semantictags.Taggable):
+
+    DATE_PRECISION_YEAR='y'
+    DATE_PRECISION_MONTH='m'
+    DATE_PRECISION_DAY='d'
+
+    DATE_PRECISION_CHOICES=(
+        (DATE_PRECISION_YEAR,'Year'),
+        (DATE_PRECISION_MONTH,'Month'),
+        (DATE_PRECISION_DAY,'Day')
+    )
     name = models.CharField(max_length=64)
     published_on=models.DateField(null=True,blank=True)
+    published_on_precision=models.CharField(max_length=1,blank=True,null=True,choices=DATE_PRECISION_CHOICES)
     published_by = models.ManyToManyField("Company",blank=True,related_name='published_%(class)s')
     created_by = models.ForeignKey("retconpeople.Person",on_delete=models.PROTECT,null=True,blank=True,related_name="+")
     # representes_collections = models.ManyToManyField('retconstorage.Collection')
