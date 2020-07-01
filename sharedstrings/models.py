@@ -140,6 +140,13 @@ class SharedStringField(models.ForeignKey):
         if isinstance(value, str):
             value, created = Strings.objects.get_or_create(name=value)
         return super().to_python(value)
+
+    def get_prep_value(self, value):
+
+        if isinstance(value, str):
+            value, created = Strings.objects.get_or_create(name=value)
+        return super().get_prep_value(value)
+
     
     def get_lookup(self, lookup_name):
         if lookup_name == 'icontains':

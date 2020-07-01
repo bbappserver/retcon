@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.transaction import atomic
 from django.core.exceptions import ValidationError
 from sharedstrings import models as sharedstrings
 from semantictags import models as semantictags
@@ -8,21 +9,65 @@ import uuid
 #     id = models.AutoField(primary_key=True)
 #     name = models.CharField()
 
+class UrlPattern(models.Model):
+    pattern = models.CharField(max_length=1024)
+    website = models.ForeignKey("Website",on_delete=models.CASCADE,related_name='user_id_patterns')
+
+
 class Website(models.Model):
     id = models.AutoField(primary_key=True)
     parent_site = models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,blank=True,related_name="child_sites")
     domain= models.CharField(max_length=256,help_text="e.g. twitter.com",unique=True)
     name = sharedstrings.SharedStringField()
     tld = sharedstrings.SharedStringField()
+    user_id_format_string = models.CharField(max_length=1024,null=True,blank=True)
     description=models.CharField(max_length=255)
-    username_pattern=models.CharField(null=True,blank=True,max_length=1024, help_text="regex with capture group for string after url scheme e.g.\n twitter\\.com/([^/]+)")
-    user_number_pattern=models.CharField(null=True,blank=True,max_length=1024,help_text="regex with capture group for string after url scheme e.g.\n pixiv\\.net/member\\.php\\?id=\\d+")
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.tld is None:
+            try:
+                self.auto_replace_tld()
+            except:
+                pass #if tldextract not present silently fail or error
+        if isinstance(self.name,str):
+            value, created = sharedstrings.Strings.objects.get_or_create(name=self.name)
+            self.name=value
+
+        super().save(*args, **kwargs)  # Call the "real" save() method.
+        
+    def calculate_tld(self):
+        import tldextract #this import is intentionally here as an optional requirement
+        return tldextract.extract(self.domain).suffix
+
+    def auto_replace_tld(self):
+        value=self.calculate_tld()
+        value, created = sharedstrings.Strings.objects.get_or_create(name=value)
+        self.tld=value
 
     def substitute_username_pattern(self,args):
         raise NotImplementedError()
     def substitute_user_number_pattern(self,args):
         raise NotImplementedError()
+
+    @classmethod
+    def parse_url(cls,url):
+        raise NotImplementedError()
+        #get patterns test patterns
+        #test
+        #if is int produce a Usernummber
+        #else produce a username
+        #note this pair may already exist so get_or_create
+    
+    #TODO on save update url pattern cache
+    @classmethod
+    def reload_pattern_cache(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def list_patterns(cls):
+        raise NotImplementedError()
+
 
     def __str__(self):
         return "{} ({})".format(self.name,self.domain)
@@ -149,6 +194,13 @@ class Person(models.Model):
     def pull_associated_companies(self):
         raise NotImplementedError()
 
+    @classmethod
+    def create_from_identifiers(cls,urls,user_identifiers):
+        raise NotImplementedError()
+        # Website.
+        # with atomic:
+
+
 class UserLabel(models.Model):
     #TODO django3
     # class Roles(models.IntegerChoices):
@@ -173,6 +225,7 @@ class UserLabel(models.Model):
     )
     status=models.IntegerField(choices=STATUS,null=True,default=None,blank=True)
     role=models.IntegerField(choices=ROLES,null=True,default=None,blank=True)
+    wanted = models.BooleanField(null=True,blank=True)
     class Meta:
         abstract=True
 

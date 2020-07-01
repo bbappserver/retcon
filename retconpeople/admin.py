@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.db.models import Q
-from .models import UserName,UserNumber,Person,Website
+from .models import UserName,UserNumber,Person,Website,UrlPattern
 # Register your models here.
 
 def merge_people(modeladmin, request, queryset):
@@ -24,6 +24,10 @@ class UserNameInline(admin.TabularInline):
 class UserNumberInline(admin.TabularInline):
     model = UserNumber
     autocomplete_fields=["website"]
+
+class UrlPatternInline(admin.TabularInline):
+    model = UrlPattern
+
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
@@ -55,6 +59,10 @@ class PersonAdmin(admin.ModelAdmin):
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
     autocomplete_fields=["tld","tags","name","parent_site"]
+    list_display=["id","domain","user_id_format_string","tld"]
+    #list_filter=["tld"] #TODO doesn't work because options include all shared strings
+    exclude=["user_id_patterns"]
+    inlines=[UrlPatternInline]
     pass
 
     
