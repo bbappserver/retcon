@@ -127,7 +127,7 @@ class TagViewSet(viewsets.ModelViewSet):
         try:
             lang= request.PATCH['locale'] if 'locale' in request.PATCH else request.LANGUAGE_CODE
 
-            with atomic:
+            with atomic():
                 tag= self.get_object()
                 s=Strings.objects.get_or_create(name=request.PATCH.name)
                 s.save()

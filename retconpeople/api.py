@@ -3,11 +3,12 @@ from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.decorators import action,renderer_classes
 from rest_framework.renderers import JSONRenderer
-from .models import Person,UserName,UserNumber,Website
+from .models import Person,UserName,UserNumber,Website,UrlPattern
 from sharedstrings.api import StringsField
 from semantictags.api import TagSerializer,TagLabelSerializer
 from django.shortcuts import redirect,get_object_or_404
 from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
 import json
 
 from rest_framework import renderers
@@ -151,6 +152,54 @@ class PersonViewSet(viewsets.ModelViewSet):
         serializer = PersonSerializer(user,context={'request': request})
         return Response(serializer.data)
     
+    
+    @action(detail=False, methods=['get','post'])
+    def search(self, request, pk=None,format=None):
+        d=request.data
+        urls = d['urls'] if 'urls' in d else []
+        identifiers = d['identifiers'] if 'identifiers' in d else []
+        l=Person.search_by_identifiers(urls=urls,user_identifiers=identifiers)
+        serializer=PersonSerializer(l,many=True)
+        if len(l)>0:
+            
+            return Response(serializer.data,status=200)
+        else:
+            return Response(serializer.data,status=404)
+
+    
+    @action(detail=False,methods=['post'])
+    def autocreate(self, request, pk=None,format=None):
+        '''Creates a person from the given information or returns conflicting ids'''
+        d=request.data
+        urls = d['urls'] if 'urls' in d else []
+        identifiers = d['identifiers'] if 'identifiers' in d else []
+        allow_partial= 'allowpartial' in request.query_params and request.query_params['allowpartial'] =='1'
+        try:
+            created,partial,id=Person.create_from_identifiers(user_identifiers=identifiers,urls=urls,fail_on_missing_domain= not allow_partial)
+            serializer=PersonSerializer(id)
+
+            if partial:
+                r= Response(serializer.data,status=207)
+                response['Created'] = created
+                return r
+
+            if created:
+                return Response(serializer.data,status=201)
+            else:
+                return Response(serializer.data,status=200)
+
+        except Person.DuplicateIdentityError as e:
+            identities=e.identities
+            serializer=PersonSerializer(identities)
+            return Response(serializer.data,status=409)
+        except ObjectDoesNotExist as e:
+            return Response(str(e),status=404)
+        # except NotImplementedError:
+        #     return Response(status=501)
+        # except Exception as e:
+        #     return Response(status=500)
+
+
     @action(detail=True, methods=['get','post','delete'])
     def users(self, request, pk=None,format=None):
         
@@ -235,14 +284,26 @@ class WebsiteViewSet(viewsets.ModelViewSet):
     def users(self, request, pk=None,format=None):
         site = self.get_object()
         
+        wanted='?'
+        if 'wanted' in request.GET:
+            if request.GET['wanted']=='0':wanted=False
+            if request.GET['wanted']=='1':wanted=True
+            if request.GET['wanted']=='unset':wanted=None
+
+        if wanted =='?':
+            name_set = site.user_names.all()
+            number_set = site.user_numbers.all()
+        else:
+            name_set = site.user_names.filter(want=wanted)
+            number_set = site.user_numbers.filter(want=wanted)
 
         if 'owners' in request.GET:
-            lnames= list(map(lambda x: (x.name.name,x.belongs_to_id),site.user_names.all()))
-            lnumbers=map(lambda x: x.number,site.user_numbers.all())
+            lnames= list(map(lambda x: (x.name.name,x.belongs_to_id),name_set))
+            lnumbers=map(lambda x: x.number,number_set)
             lnames.extend(lnumbers)
         else:
-            lnames= list(map(lambda x: x.name.name,site.user_names.all()))
-            lnumbers=map(lambda x: x.number,site.user_numbers.all())
+            lnames= list(map(lambda x: x.name.name,name_set))
+            lnumbers=map(lambda x: x.number,number_set)
             lnames.extend(lnumbers)
         
         if format == "txt" and not 'owners' in request.GET:

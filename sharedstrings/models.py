@@ -132,12 +132,15 @@ class SharedStringField(models.ForeignKey):
 
     def to_python(self, value):
         
+        if value is None:
+            return super().to_python(None)
         if isinstance(value,int):
             return super().to_python(value)
 
-        if value is None or len(value) == 0:
-            return None
+        
         if isinstance(value, str):
+            if len(value)==0:
+                return super().to_python(None)
             value, created = Strings.objects.get_or_create(name=value)
         return super().to_python(value)
 
@@ -145,6 +148,7 @@ class SharedStringField(models.ForeignKey):
 
         if isinstance(value, str):
             value, created = Strings.objects.get_or_create(name=value)
+            return super().get_prep_value(value)
         return super().get_prep_value(value)
 
     
@@ -153,6 +157,8 @@ class SharedStringField(models.ForeignKey):
             return SurrogateIContainsStringLookup
         if lookup_name == 'contains':
             return SurrogateContainsStringLookup
+        if lookup_name == 'exact':
+            return SurrogateExactStringLookup
         
         else:
             return super().get_lookup(lookup_name)
@@ -176,3 +182,12 @@ class SurrogateContainsStringLookup(models.lookups.In):
         return super().__init__(lhs,rhs,*kwargs)
 
     lookup_name = 'contains'
+
+class SurrogateExactStringLookup(models.lookups.In):
+    
+    def __init__(self,lhs,rhs, *kwargs):
+        self.params=[]
+        rhs= [x.id for x in Strings.objects.filter(name=rhs).distinct()]
+        return super().__init__(lhs,rhs,*kwargs)
+
+    lookup_name = 'exact'

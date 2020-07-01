@@ -1,8 +1,10 @@
 from django.db import models
-from django.db.transaction import atomic
+from django.db import transaction
 from django.core.exceptions import ValidationError
 from sharedstrings import models as sharedstrings
 from semantictags import models as semantictags
+from django.core.exceptions import ObjectDoesNotExist
+import re
 import uuid
 # Create your models here.
 # class Strings(models.Model):
@@ -68,6 +70,9 @@ class Website(models.Model):
     def list_patterns(cls):
         raise NotImplementedError()
 
+    def parent_site_name(self):
+        '''Used for display in tabular views'''
+        return self.parent_site.domain if self.parent_site else None
 
     def __str__(self):
         return "{} ({})".format(self.name,self.domain)
@@ -155,8 +160,9 @@ class Person(models.Model):
                 return self.first_name  
             else:
                 try:
-                    o= self.pseudonyms.all()[0]
-                    return o.name
+                    if self.pseudonyms.count()>0:
+                        o= self.pseudonyms.all()[0]
+                        return o.name
                 except:
                     try:
                         un=self.usernames
@@ -194,11 +200,148 @@ class Person(models.Model):
     def pull_associated_companies(self):
         raise NotImplementedError()
 
+    class DuplicateIdentityError(ValueError):
+        def __init__(self,identities):
+            self.identities=identities
     @classmethod
-    def create_from_identifiers(cls,urls,user_identifiers):
-        raise NotImplementedError()
-        # Website.
-        # with atomic:
+    def create_from_identifiers(cls,urls=[],user_identifiers=[],fail_on_missing_domain=True):
+        '''returns (Created,Partial,Person,UserLabel[])'''
+        try:
+            person_created=False
+            person_partial=False
+            with transaction.atomic():
+                name_sites=list(cls.urls_to_name_site_pair(urls))
+                name_sites.extend(user_identifiers)
+                pid = cls.search_by_identifiers(urls=[],user_identifiers=name_sites,expect_single=True)
+                if len(pid)>0:
+                    pid=pid[0]
+                else:
+                    person_created=True
+                    pid=Person()
+                    pid.save()
+                
+                for name,domain in name_sites:
+                    
+                    site=domain
+                    if isinstance(site,str):
+                        try:
+                            site=Website.objects.get(domain=site)
+                        except ObjectDoesNotExist as e:
+                            if fail_on_missing_domain:
+                                raise e
+                            else:
+                                person_partial=True
+                                continue
+                    
+                    try:
+                        name=int(name)
+                        un,l_created=UserNumber.objects.get_or_create(number=name,website=site)
+                        un.save()
+                        pid.user_numbers.add(un)
+                        
+                        
+                    except ValueError:
+                        ns,l_created=sharedstrings.Strings.objects.get_or_create(name=name)
+                        ns.save()
+                        un,l_created=UserName.objects.get_or_create(name=ns,website=site)
+                        un.save()
+                        pid.usernames.add(un)
+                        
+                pid.save()
+            return (person_created,person_partial,pid)
+
+        except Person.DuplicateIdentityError as e:
+            raise e
+
+    @classmethod
+    def urls_to_name_site_pair(cls,urls=[]):
+        
+        if len(urls)>0:
+            user_url_patterns= UrlPattern.objects.all()
+            #TODO maybe optimal to filter domainname first at scale
+
+            for p in user_url_patterns:
+                
+                #NB match only looks at the start of the string but this is optimal
+                #since we're looking at full urls
+                for url in urls:
+                    out=re.match(re.compile(p.pattern),url)
+                    if out is None:
+                        continue
+                    name=out.group(1)
+                    try:
+                        name=int(name)
+                        t=(name,p.website)
+                        yield t
+                    except:
+                        t=(name,p.website)
+                        yield t
+        
+    
+        
+    
+    @classmethod
+    def search_by_identifiers(cls,urls=[],user_identifiers=[],expect_single=False):
+        '''Search for persons with identities exiting early if duplicating and expect_single'''
+        identities=set()
+        names=set()
+
+        for name,domain_name in user_identifiers:
+            try:
+                try:
+                    name=int(name)
+                    if isinstance(domain_name,Website):
+                        un=UserNumber.objects.get(number=name,website=domain_name)
+                    else:
+                        un=UserNumber.objects.get(number=name,website__domain=domain_name)
+                except ValueError:
+                    if isinstance(domain_name,Website):
+                        un=UserName.objects.get(name__name=name,website=domain_name)
+                    else:
+                        un=UserName.objects.get(name__name=name,website__domain=domain_name)
+            except ObjectDoesNotExist:
+                #Found no such pair
+                continue
+
+            identities.add(un.belongs_to)
+            if expect_single and len(identities)>1:
+                raise Person.DuplicateIdentityError(list(identities))
+        
+        if len(urls)>0:
+            user_url_patterns=UrlPattern.objects.all()
+            #TODO maybe optimal to filter domainname first at scale
+
+            for p in user_url_patterns:
+                #NB match only looks at the start of the string but this is optimal
+                #since we're looking at full urls
+                regex=re.compile(p.pattern)
+
+                for url in urls:
+                    #do regex match to extract site and identifier.
+                    out=re.match(regex,url)
+                    if out is None:
+                        continue
+                    
+                    name=out.group(1)
+                    try:
+                        name=int(name)
+                        un=UserNumber.objects.get(number=name,website=p.website)
+                    except ObjectDoesNotExist:
+                            #The regex matched, but no identity,keep looking at the other urls
+                            pass
+                    except ValueError:
+                        try:
+                            un=UserName.objects.get(name=name,website=p.website)
+                            identities.add(un.belongs_to)
+                        except ObjectDoesNotExist:
+                            #The regex matched, but no identity,keep looking at the other urls
+                            pass
+                    if expect_single and len(identities)>1:
+                        raise Person.DuplicateIdentityError(list(identities))
+        #sanity check
+        if expect_single and len(identities)>1:
+                raise Person.DuplicateIdentityError(list(identities))
+        return list(identities)
 
 
 class UserLabel(models.Model):
@@ -231,8 +374,8 @@ class UserLabel(models.Model):
 
 class UserName(UserLabel):
     id = models.AutoField(primary_key=True)
-    website=models.ForeignKey("Website",related_name="user_names",on_delete=models.PROTECT)
-    name = sharedstrings.SharedStringField()
+    website=models.ForeignKey("Website",related_name="user_names",on_delete=models.PROTECT,null=False)
+    name = sharedstrings.SharedStringField(null=False)
     tags=models.ManyToManyField("semantictags.Tag",related_name="+")
     belongs_to=models.ForeignKey("Person",related_name='usernames',on_delete=models.CASCADE,null=True,blank=True)
 
