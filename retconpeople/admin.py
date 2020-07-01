@@ -59,7 +59,7 @@ class PersonAdmin(admin.ModelAdmin):
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
     autocomplete_fields=["tld","tags","name","parent_site"]
-    list_display=["id","domain","user_id_format_string","tld"]
+    list_display=["id","domain","parent_site_name","user_id_format_string","tld"]
     #list_filter=["tld"] #TODO doesn't work because options include all shared strings
     exclude=["user_id_patterns"]
     inlines=[UrlPatternInline]
