@@ -7,14 +7,25 @@ body {
   position: relative;
   display: inline-block;
 }
-/* input {
+.select2-container{
+  min-width:85%;
+  max-width:90%;
+}
+ .related-widget-wrapper
+{
+  min-width: 80%;
+} 
+
+ input {
   border: 1px solid transparent;
   padding: 10px;
   font-size: 16px;
 }
-input[type=text]  {
-  width: 100%;
-} */
+
+/* input[type=text]  {
+  min-width: 80%;
+  max-width: 85%;
+}  */
 input[type=submit] {
   background-color: DodgerBlue;
   color: #fff;

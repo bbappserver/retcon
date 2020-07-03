@@ -108,7 +108,7 @@ var register_autocomplete = function (event) {
         var e =$( this );
         e.autocomplete({
             source: e.attr('autocomplete-source'),
-            delay:500,
+            delay:100,
             minLength:3
         });
       });
