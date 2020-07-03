@@ -1,4 +1,4 @@
-* { box-sizing: border-box; }
+/* * { box-sizing: border-box; } */
 body {
   font: 16px Arial;
 }
@@ -7,12 +7,12 @@ body {
   position: relative;
   display: inline-block;
 }
-input {
+/* input {
   border: 1px solid transparent;
   padding: 10px;
   font-size: 16px;
 }
-/* input[type=text]  {
+input[type=text]  {
   width: 100%;
 } */
 input[type=submit] {
