@@ -269,7 +269,7 @@ class WebsiteSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Website
-        fields=['id','name','tld','domain',"description","username_pattern","user_number_pattern","parent_site","tags"]
+        fields=['id','name','tld','domain',"description","user_id_format_string","parent_site","tags","user_id_patterns"]
 
 
 class WebsiteViewSet(viewsets.ModelViewSet):
