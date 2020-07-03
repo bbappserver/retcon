@@ -94,10 +94,12 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
     user_numbers=LeafUserNumberSerializer(many=True,required=False)
 
     tags = TagSerializer(many=True,required=False)
+    distinguish_from=serializers.HyperlinkedRelatedField(many=True,view_name='person-detail',queryset=Person.objects.all())
+
     class Meta:
         model = Person
         depth=1
-        fields = ['id','first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers']
+        fields = ['id','first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers','distinguish_from']
     
     def create(self, validated_data):
         # profile_data = validated_data.pop('profile')

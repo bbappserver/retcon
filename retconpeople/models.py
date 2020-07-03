@@ -84,6 +84,7 @@ class Person(models.Model):
     pseudonyms = models.ManyToManyField("sharedstrings.Strings",related_name="+",blank=True)
     description=models.CharField(max_length=512,blank=True)
     merged_into=models.ForeignKey("self",related_name="merged_from",on_delete=models.DO_NOTHING,null=True,blank=True)
+    distinguish_from = models.ManyToManyField("self",symmetrical=True,help_text="Indicate people of similar names who should not be confused")
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
     ambiguous_tags=models.ManyToManyField("sharedstrings.Strings",blank=True)
 
@@ -199,6 +200,9 @@ class Person(models.Model):
         raise NotImplementedError()
     def pull_associated_companies(self):
         raise NotImplementedError()
+
+    def wanted_id_count(self):
+        return self.usernames.filter(wanted=True).count()+self.user_numbers.filter(wanted=True).count()
 
     class DuplicateIdentityError(ValueError):
         def __init__(self,identities):
@@ -342,6 +346,10 @@ class Person(models.Model):
         if expect_single and len(identities)>1:
                 raise Person.DuplicateIdentityError(list(identities))
         return list(identities)
+
+    class Meta:
+        # ordering=['id']
+        pass
 
 
 class UserLabel(models.Model):

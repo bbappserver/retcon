@@ -35,7 +35,7 @@ class PersonAdmin(admin.ModelAdmin):
     search_fields=['first_name','last_name','pseudonyms']
     list_display=["id","formatted_name","description","wanted_id_count"]
     list_filter=[]
-    autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","merged_into"]
+    autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","merged_into","distinguish_from"]
     readonly_fields = ('uuid',)
     
     inlines = [

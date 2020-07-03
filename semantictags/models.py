@@ -10,9 +10,9 @@ class Tag(models.Model):
     labels = models.ManyToManyField("TagLabel",related_name="+")
     canonical_label = models.ForeignKey("TagLabel",null=True,blank=True,on_delete=models.DO_NOTHING,related_name="+")
     definition=models.CharField(max_length=256)
-    implies = models.ManyToManyField("self",symmetrical=False,blank=True,related_name="implied_by")
-    distinguish_from = models.ManyToManyField("self",symmetrical=True,blank=True)
-    conflicts_with = models.ManyToManyField("self",symmetrical=True,blank=True,help_text="&forall;x p(x) &harr; &not;q(x)")
+    implies = models.ManyToManyField("self",symmetrical=False,blank=True,related_name="implied_by",help_text="this &Implies; that")
+    distinguish_from = models.ManyToManyField("self",symmetrical=True,blank=True, help_text="this ≠ that")
+    conflicts_with = models.ManyToManyField("self",symmetrical=True,blank=True,help_text="x &#8853; y")
 
     def __str__(self):
         return "{}({}) - {}".format(self.canonical_label,self.id,self.definition)
