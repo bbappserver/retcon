@@ -16,15 +16,17 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # domain="twitter.com"
-        domain = "twitter.com"
-        website = Website.objects.filter(domain__iexact=domain)[0]
+        domain = args['domain']
 
         ul = []
-        
-        users = UserName.objects.filter(website=website)
+        #trim null names
+        #UserName.objects.filter(website__domain__iexact=domain,name=None)
+
+        #TODO We shouldn't have to check if name isnull but for some reason we did have to
+        users = UserName.objects.filter(website__domain__iexact=domain,name__isnull=False)
         ul.extend((str(x.name).casefold() for x in users))
 
-        users = UserNumber.objects.filter(website=website)
+        users = UserNumber.objects.filter(website__domain__iexact=domain)
         ul.extend((str(x.number) for x in users))
 
         ul = set(ul)
