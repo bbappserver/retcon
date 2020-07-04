@@ -84,7 +84,7 @@ class Person(models.Model):
     pseudonyms = models.ManyToManyField("sharedstrings.Strings",related_name="+",blank=True)
     description=models.CharField(max_length=512,blank=True)
     merged_into=models.ForeignKey("self",related_name="merged_from",on_delete=models.DO_NOTHING,null=True,blank=True)
-    distinguish_from = models.ManyToManyField("self",symmetrical=True,help_text="Indicate people of similar names who should not be confused")
+    distinguish_from = models.ManyToManyField("self",symmetrical=True,blank=True,help_text="Indicate people of similar names who should not be confused")
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
     ambiguous_tags=models.ManyToManyField("sharedstrings.Strings",blank=True)
 
