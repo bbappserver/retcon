@@ -47,7 +47,12 @@ class PersonAdmin(admin.ModelAdmin):
     def get_search_results(self, request, queryset, search_term):
         if search_term == '':
             return (Person.objects.all(),True)
-
+        try:
+            id=int(search_term)
+            q=Q(id=id)|Q(pseudonyms__name__icontains=search_term)|Q(usernames__name__name__istartswith=search_term)
+            return (Person.objects.filter(q),True)
+        except:
+            pass
         q=Q(first_name__name__istartswith=search_term) | Q(last_name__name__istartswith=search_term)
         q1=Person.objects.filter(q)
         q2=Person.objects.filter(pseudonyms__name__icontains=search_term)
@@ -61,9 +66,10 @@ class PersonAdmin(admin.ModelAdmin):
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
     autocomplete_fields=["tld","tags","name","parent_site"]
-    list_display=["id","domain","parent_site_name","user_id_format_string","tld"]
+    list_display=["id","domain","parent_site_name","brief","user_id_format_string","tld"]
     #list_filter=["tld"] #TODO doesn't work because options include all shared strings
     exclude=["user_id_patterns"]
+    ordering=['domain']
     inlines=[UrlPatternInline]
     pass
 
