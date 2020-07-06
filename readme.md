@@ -44,6 +44,23 @@ http://localhost:8000/api/site/1/users.txt
 
 Models and API are subject to change without notice.  I recommend you abstract out any access to them if you write something that interacts with the system.
 
+### On Creating Website patterns
+
+I recommend quite an elaborate url pattern for capturing websites.  For example the pattern I use for twitter is.
+```^(?:https?:\/\/)?(?:www\.)?(?:twitter\.com\/){1,2}([^\/]+)\/?$```
+- `^(?:https?:\/\/)?(?:www\.)?` : This pattern captures url with or without scheme and www subdomain
+- `twitter\.com\/{1,2}`: The actual domain and trailing slash between one and two times, the second time is for bad url substitiutions. (e.g. `twitter.com/{username}` where `username=twitter.com/foobar`)
+- `([^\/]+)`: Actual capture of username string.
+- `\/?`: Optional trailing slash
+
+Unfortunatly this can't be just done generically because some sites use a subdomain as their user pattern.
+e.g. `username.tumblr.com`
+
+By comparison the substitution pattern is much easer.  Simply use a (python format string)[https://www.python.org/dev/peps/pep-3101/#format-strings] where the item that will be substituted into `{}` is the username.
+
+### About similarities between websites and companies
+In may instances company and website records match up almost 1 to 1 seemingly duplicating information, this is just a side effect of many companies having a we presence.  When the archived work is from a company whic became defunt prior to the web it is sensible for them to be seperate.
+
 ### Contributing
 Contributions and feedback are always welcome.  If you want to complete/suggest a feature, fix a bug, or write some tests feel free to do so and open a pull request.
 
