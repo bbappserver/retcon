@@ -192,7 +192,7 @@ class PersonViewSet(viewsets.ModelViewSet):
 
         except Person.DuplicateIdentityError as e:
             identities=e.identities
-            serializer=PersonSerializer(identities)
+            serializer=PersonSerializer(identities,many=True)
             return Response(serializer.data,status=409)
         except ObjectDoesNotExist as e:
             return Response(str(e),status=404)
