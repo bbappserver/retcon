@@ -21,6 +21,10 @@ class PlainTextRenderer(renderers.BaseRenderer):
     def render(self, data, media_type=None, renderer_context=None):
         return data.encode(self.charset)
 
+class UrlPatternSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UrlPattern
+        fields= ['pattern']
 
 class UsernameSerializer(serializers.ModelSerializer):
     website = serializers.SlugRelatedField(
@@ -99,7 +103,7 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Person
         depth=1
-        fields = ['id','first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers','distinguish_from']
+        fields = ['id','first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers','distinguish_from','uuid']
     
     def create(self, validated_data):
         # profile_data = validated_data.pop('profile')
@@ -268,6 +272,8 @@ class WebsiteSerializer(serializers.HyperlinkedModelSerializer):
 
     #TODO derive tld automatically in model and make this readonly
     tld = StringsField()
+
+    user_id_patterns= UrlPatternSerializer(many=True)
 
     class Meta:
         model = Website
