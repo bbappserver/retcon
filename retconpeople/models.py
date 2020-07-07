@@ -17,9 +17,11 @@ class UrlPattern(models.Model):
 
 
 class Website(models.Model):
+    BRIEF_TRUNCATE_LENGTH=100 #TODO get from settings
     id = models.AutoField(primary_key=True)
     parent_site = models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,blank=True,related_name="child_sites")
     domain= models.CharField(max_length=256,help_text="e.g. twitter.com",unique=True)
+    #A domain should consist only of tld and name not subdomain
     name = sharedstrings.SharedStringField()
     tld = sharedstrings.SharedStringField()
     user_id_format_string = models.CharField(max_length=1024,null=True,blank=True)
@@ -74,6 +76,14 @@ class Website(models.Model):
         '''Used for display in tabular views'''
         return self.parent_site.domain if self.parent_site else None
 
+    def brief(self):
+        s=self.description
+        if len(self.description)>=self.BRIEF_TRUNCATE_LENGTH:
+            s=s[:self.BRIEF_TRUNCATE_LENGTH]
+            return s+'…'
+        else:
+            return s
+
     def __str__(self):
         return "{} ({})".format(self.name,self.domain)
 
@@ -84,7 +94,7 @@ class Person(models.Model):
     pseudonyms = models.ManyToManyField("sharedstrings.Strings",related_name="+",blank=True)
     description=models.CharField(max_length=512,blank=True)
     merged_into=models.ForeignKey("self",related_name="merged_from",on_delete=models.DO_NOTHING,null=True,blank=True)
-    distinguish_from = models.ManyToManyField("self",symmetrical=True,help_text="Indicate people of similar names who should not be confused")
+    distinguish_from = models.ManyToManyField("self",symmetrical=True,blank=True,help_text="Indicate people of similar names who should not be confused")
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
     ambiguous_tags=models.ManyToManyField("sharedstrings.Strings",blank=True)
 

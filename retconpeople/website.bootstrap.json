@@ -1,0 +1,166 @@
+[
+    {
+        "id": 1,
+        "name": "Tumblr",
+        "tld": "com",
+        "domain": "tumblr.com",
+        "description": "REEEEblog!",
+        "user_id_format_string": "https://{}.tumblr.com",
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": [
+            {
+                "pattern": "^(?:https?:\\/\\/)?([^\\.]*)\\.tumblr\\.com$"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "name": "Furaffinity",
+        "tld": "net",
+        "domain": "furaffinity.net",
+        "description": "The premier furry gallery",
+        "user_id_format_string": "https://www.furaffinity.net/user/{}",
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": [
+            {
+                "pattern": "(?:https?:\\/\\/)?(?:www.)?furaffinity.net\\/(?:user|galler|scraps)\\/([^\\/]*)"
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "name": "DeviantArt",
+        "tld": "com",
+        "domain": "deviantart.com",
+        "description": "One of the oldest digital galleries.",
+        "user_id_format_string": null,
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": []
+    },
+    {
+        "id": 5,
+        "name": "Pixiv",
+        "tld": "net",
+        "domain": "pixiv.net",
+        "description": "Japanese gallery site",
+        "user_id_format_string": "https://www.pixiv.net/member.php?={}",
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": [
+            {
+                "pattern": "(?:https?:\\/\\/)?(?:www\\.)?pixiv\\.net\\/(?:member\\.php\\?id=(\\d+)|fanbox\\/creator\\/(\\d+)|[^\\/]{2,4}\\/users\\/(\\d+))"
+            }
+        ]
+    },
+    {
+        "id": 6,
+        "name": "Twitter",
+        "tld": "com",
+        "domain": "twitter.com",
+        "description": "The premier microblogging platform",
+        "user_id_format_string": "https://www.twitter.com/{}",
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": [
+            {
+                "pattern": "^(?:https?:\\/\\/)?(?:www\\.)?(?:twitter\\.com\\/){1,2}([^\\/]+)\\/?$"
+            }
+        ]
+    },
+    {
+        "id": 7,
+        "name": "Patreon",
+        "tld": "com",
+        "domain": "patreon.com",
+        "description": "Creator paywalling subscription site.",
+        "user_id_format_string": "https://www.patreon.com/{}",
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": [
+            {
+                "pattern": "^(?:https?:\\/\\/)?(?:www\\.)?patreon.com\\/(?:patreon.com\\/)?([^\\/]+)$"
+            }
+        ]
+    },
+    {
+        "id": 8,
+        "name": "Yiff Party",
+        "tld": "party",
+        "domain": "yiff.party",
+        "description": "A site that mirrors patreon without paywalls.",
+        "user_id_format_string": "https://yiff.party/patreon/{}",
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": []
+    },
+    {
+        "id": 9,
+        "name": "Y!Gallery",
+        "tld": "net",
+        "domain": "y-gallery.net",
+        "description": "Yaoi gallery site originating from split of shezzyart, the other being furaffinity",
+        "user_id_format_string": "http://y-gallery.net/user/{}",
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": [
+            {
+                "pattern": "http://(?:yaoi)?\\.y-gallery\\.net/user/([^\\/]+)"
+            }
+        ]
+    },
+    {
+        "id": 10,
+        "name": "OnlyFans",
+        "tld": "com",
+        "domain": "onlyfans.com",
+        "description": "Subscription adult model service.",
+        "user_id_format_string": null,
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": []
+    },
+    {
+        "id": 11,
+        "name": "blogspot",
+        "tld": "com",
+        "domain": "blogspot.com",
+        "description": "The premier blogging site.",
+        "user_id_format_string": "https://{}.blogspot.com",
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": [
+            {
+                "pattern": "^(?:https?:\\/\\/)?([^\\.]+)?blogspot.com\\/?"
+            }
+        ]
+    },
+    {
+        "id": 12,
+        "name": "Gumroad",
+        "tld": "com",
+        "domain": "gumroad.com",
+        "description": "Art marketplace",
+        "user_id_format_string": null,
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": []
+    },
+    {
+        "id": 13,
+        "name": "Instagram",
+        "tld": "com",
+        "domain": "instagram.com",
+        "description": "Amature SFW sexy photo sharing.",
+        "user_id_format_string": "https://www.instagram.com/{}/",
+        "parent_site": null,
+        "tags": [],
+        "user_id_patterns": [
+            {
+                "pattern": "^(?:https?:\\/\\/)?(?:www.)?instagram.com\\/(?:instagram.com\\/)?([^\\/]*)"
+            }
+        ]
+    }
+]

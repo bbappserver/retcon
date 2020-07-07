@@ -24,6 +24,7 @@ class Company(semantictags.Taggable):
 
     parent=models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,blank=True,related_name="children")
     website = models.ForeignKey("retconpeople.Website",on_delete=models.DO_NOTHING,null=True,blank=True)
+    defunct = models.BooleanField(null=True,blank=True)
     external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
 
     def __str__(self):
@@ -92,6 +93,18 @@ class CreativeWork(semantictags.Taggable):
     
     def publisher_names(self):
         return [x.name for x in self.published_by.all()]
+    
+    def clean(self):
+        # Don't allow draft entries to have a pub_date.
+        if self.published_on is not None and self.published_on_precision is None:
+            raise ValidationError(_('If a work has a publication date it must also have a precision.'))
+        if self.published_on is None and self.published_on_precision is not None:
+            raise ValidationError(_("Must specify a date for publication precision,for don't care use any valid number e.g 01"))
+        
+    # class Meta:
+    #     constraints = [
+    #         models.CheckConstraint(check=(models.Q(published_on=None, published_on_precision=None)|models.Q(published_on__isnull=False,published_on_precision__isnull=False)), name='date_and_precision'),
+    #     ]
 
 
 class Series(CreativeWork):
@@ -129,6 +142,8 @@ class Series(CreativeWork):
 
     produced_by = models.ManyToManyField("Company",blank=True,related_name='produced')
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES,null=True,blank=True)
+
+    #finished_publication= models.BooleanField(null=True,blank=True)
     
 
     def __str__(self):
@@ -164,6 +179,8 @@ class Episode(CreativeWork):
     VIDEO_GAME=7
     WEBCOMIC=8 #Comics published as a web anthology
     WEBSERIES=9 #e.g. a series of youtube videos
+    CARTOON=10
+    WEBCARTOON=11
 
     MEDIUM_CHOICES = [
         (ANTHOLOGY,"Anthology"),
@@ -175,7 +192,8 @@ class Episode(CreativeWork):
         (TV,"Television"),
         (VIDEO_GAME,"Video Game"),
         (WEBCOMIC,"Webcomic"),
-        (WEBSERIES,"Webseries")
+        (WEBSERIES,"Webseries"),
+        (WEBCARTOON,"Web Cartoon")
     ]
     #End mediums
 
