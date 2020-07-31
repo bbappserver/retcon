@@ -106,10 +106,17 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['id','first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers','distinguish_from','uuid']
     
     def create(self, validated_data):
+        # tracks_data = validated_data.pop('tracks')
+        # urls = validated_data.pop('urls')
+        person = Person.objects.create(**validated_data)
+        for track_data in urls:
+            
+            Track.objects.create(album=album, **track_data)
+        return person
         # profile_data = validated_data.pop('profile')
-        user = Person.objects.create(**validated_data)
+        
         # Profile.objects.create(user=user, **profile_data)
-        return user
+        return person
     
     
 
@@ -145,6 +152,12 @@ class PersonViewSet(viewsets.ModelViewSet):
     """
     queryset = Person.objects.all()
     serializer_class = PersonSerializer
+
+    def create(self, request):
+        d=request.data
+        if 'usernames' in d or 'user_numbers' in d:
+            return Response('Please user POST /people/<pk>/users to add users after creation.',status=401)
+        return super().create(request)
 
     def retrieve(self, request, pk=None):
         queryset = Person.objects.all()
@@ -259,11 +272,7 @@ class PersonViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response([],status=501)
 
-    def create(self, request):
-        d=request.data
-        if 'usernames' in d or 'user_numbers' in d:
-            return Response('Please user POST /people/<pk>/users to add users after creation.',status=401)
-        return super().create(request)
+
             
 
 
@@ -291,7 +300,6 @@ class WebsiteViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def users(self, request, pk=None,format=None):
         site = self.get_object()
-        
         wanted='?'
         if 'wanted' in request.GET:
             if request.GET['wanted']=='0':wanted=False
@@ -302,8 +310,8 @@ class WebsiteViewSet(viewsets.ModelViewSet):
             name_set = site.user_names.all()
             number_set = site.user_numbers.all()
         else:
-            name_set = site.user_names.filter(want=wanted)
-            number_set = site.user_numbers.filter(want=wanted)
+            name_set = site.user_names.filter(wanted=wanted)
+            number_set = site.user_numbers.filter(wanted=wanted)
 
         if 'owners' in request.GET:
             lnames= list(map(lambda x: (x.name.name,x.belongs_to_id),name_set))
@@ -315,6 +323,7 @@ class WebsiteViewSet(viewsets.ModelViewSet):
             lnames.extend(lnumbers)
         
         if format == "txt" and not 'owners' in request.GET:
+            #BUG this breaks if names and numbers are mixed 
             lnames= "\n".join(lnames)
 
             return Response(lnames)
