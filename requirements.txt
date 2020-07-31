@@ -2,4 +2,4 @@ Django==2.2.10
 djangorestframework==3.10.3
 filetype
 requests
-dateutil
+python-dateutil
