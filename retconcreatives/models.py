@@ -198,7 +198,7 @@ class Episode(CreativeWork):
     #End mediums
 
 
-    part_of=models.ForeignKey("Series",on_delete=models.DO_NOTHING,null=True,blank=True)
+    part_of=models.ForeignKey("Series",on_delete=models.PROTECT,null=True,blank=True,related_name='episodes')
     order_in_series=models.PositiveSmallIntegerField(null=True,blank=True)
     description = models.TextField(null=True,blank=True)
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
