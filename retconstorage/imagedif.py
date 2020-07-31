@@ -98,3 +98,40 @@ def dhash(image_sequence):
                     i+=1
         sigs.append(sig)
     return sigs
+
+class ImageComparer:
+    pass
+
+class ImageSequenceComparer:
+
+    def cmp(self):
+        raise NotImplementedError()
+
+        #TODO b should definitely be the shorter one if possible
+        i=0
+        match_spans=[]
+        for fa in a:
+            j=0
+            for fb in b:
+                e = image_distance(a,b)
+                start_frames=None
+                if e<tolerance:
+                    #fa and fb match
+                    if start_frames is None:
+                        start_frames=(i,j)
+                else:
+                    if start_frames is not None:
+                        #fa and fb stopped matching
+                        end_frames=(i,j)
+
+                        #filter out short common sequences too short probably a black frame or something
+                        if end_frames[0]-start_frames[0] >30 and end_frames[1]-start_frames[1] >30:
+                            t=(start_frames,end_frames)
+                            match_spans.append(t)
+                            start_frames=None
+                            
+                        #TODO if match type is random subsequence end early
+                        break
+                j+=1
+            i+=1
+        
