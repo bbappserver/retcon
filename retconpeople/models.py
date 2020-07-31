@@ -11,6 +11,17 @@ import uuid
 #     id = models.AutoField(primary_key=True)
 #     name = models.CharField()
 
+def zap_gremlines():
+    l=UserName.objects.all()
+    for u in l:
+        if u.name_id:
+            try:
+                name=u.name
+            except:
+                u.delete()
+        else:
+            u.delete()
+
 class UrlPattern(models.Model):
     pattern = models.CharField(max_length=1024)
     website = models.ForeignKey("Website",on_delete=models.CASCADE,related_name='user_id_patterns')
@@ -310,9 +321,9 @@ class Person(models.Model):
                         un=UserNumber.objects.get(number=name,website__domain=domain_name)
                 except ValueError:
                     if isinstance(domain_name,Website):
-                        un=UserName.objects.get(name__name=name,website=domain_name)
+                        un=UserName.objects.get(name__name__ieq=name,website=domain_name)
                     else:
-                        un=UserName.objects.get(name__name=name,website__domain=domain_name)
+                        un=UserName.objects.get(name__name__ieq=name,website__domain=domain_name)
             except ObjectDoesNotExist:
                 #Found no such pair
                 continue
@@ -345,7 +356,7 @@ class Person(models.Model):
                             pass
                     except ValueError:
                         try:
-                            un=UserName.objects.get(name=name,website=p.website)
+                            un=UserName.objects.get(name__name__ieq=name,website=p.website)
                             identities.add(un.belongs_to)
                         except ObjectDoesNotExist:
                             #The regex matched, but no identity,keep looking at the other urls
@@ -378,11 +389,14 @@ class UserLabel(models.Model):
         (1,"NSFW"),
         (2,"NSFW Extreme")
     )
+    STATUS_DEAD=2
+    STATUS_INACTIVE=1
+    STATUS_ACTIVE=0
     STATUS=(
         (None,""),
-        (0,"Active"),
-        (1,"Inactive"),
-        (2,"Dead")
+        (STATUS_ACTIVE,"Active"),
+        (STATUS_INACTIVE,"Inactive"),
+        (STATUS_DEAD,"Dead")
     )
     status=models.IntegerField(choices=STATUS,null=True,default=None,blank=True)
     role=models.IntegerField(choices=ROLES,null=True,default=None,blank=True)
@@ -408,9 +422,9 @@ class UserName(UserLabel):
 
 class UserNumber(UserLabel):
     id = models.AutoField(primary_key=True)
-    website=models.ForeignKey("Website",related_name="user_numbers",on_delete=models.CASCADE)
+    website=models.ForeignKey("Website",related_name="user_numbers",on_delete=models.PROTECT)
     number = models.BigIntegerField()
-    belongs_to=models.ForeignKey("Person",related_name='user_numbers',on_delete=models.DO_NOTHING,null=True,blank=True)
+    belongs_to=models.ForeignKey("Person",related_name='user_numbers',on_delete=models.CASCADE,null=True,blank=True)
 
     class Meta:
         unique_together = ['website', 'number']

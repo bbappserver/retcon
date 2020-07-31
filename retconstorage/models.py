@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models,transaction
 from sharedstrings.models import Strings
 from .storage import HashStorage
 from .fields import HashFileField
@@ -74,6 +74,28 @@ class NamedFile(models.Model):
     def _abspath(self,prefix=settings.NAMED_FILE_PREFIX):
         return os.path.join(prefix,self.name)
 
+
+    @classmethod
+    def prune_duplicates(cls):
+        '''Not feasible forlarge numbers of files'''
+        raise NotImplementedError()
+        l=cls.objects.all().order_by('name', 'id')
+        N=l.count()
+        i=0
+        j=i+1
+        # from progress.bar import Bar
+        # bar=Bar(max=N)
+        while i < N:
+            a=l[i]
+            with transaction.atomic():
+                j=i+1
+                b=l[j]
+                while a.name == b.name:
+                    b.delete()
+                    j+=1
+                    # bar.next()
+            i=j
+            
 
     class Meta:
         unique_together=(
@@ -190,7 +212,6 @@ class ManagedFile(models.Model):
         indexes = [models.Index(fields=['filetype'])]
     
 
-
 class Collection(models.Model):
     contents= models.ManyToManyField("ManagedFile",blank=True)
     parents = models.ManyToManyField("self",blank=True,related_name="children")
@@ -199,7 +220,6 @@ class OrderedCollectionMembers(models.Model):
     managed_file= models.ForeignKey("ManagedFile",on_delete=models.CASCADE,related_name='+')
     collection= models.ForeignKey("Collection",on_delete=models.CASCADE,related_name="ordered_members")
     ordinal= models.PositiveSmallIntegerField()
-
 
 class CollectionMetadata(models.Model):
     '''Optional minimal metadata for this collection'''
@@ -224,6 +244,50 @@ class CollectionMetadata(models.Model):
 #     a=models.ForeignKey('ManagedFile')
 #     b=models.ForeignKey('ManagedFile')
 #     type=models.CharField(max_length=1,choices=MATCH_TYPE_CHOICES)
+
+    @classmethod
+    def run_autocorrelation(cls,tolerance=2):
+        # grab all the hashes into a list (this takes a trivial maount of memory even for several million)
+        l=list(Dhash.objects.all())
+        N=l.count()
+
+        #Broadphase
+        for i in range(N):
+            for j in range(i+1):
+                x=l[i].dhash
+                y=l[j].dhash
+                z=x&y #bitwise and produces ony thos bits which are overlapped
+                distance=count_bits(z)
+                if distance < tolerance:
+                    pass
+                    #candidate for narrow phase
+        
+        #narrow phase
+        #reduce so we only have to load any particular item for correlaiton once
+        raise NotImplementedError()
+        #CASE image match image
+        #CASE image match video/animation
+        #CASE video/animation match video/animation
+
+        
+        #Before saving always ensure the lower id is a and the higher is b
+        if x.id<y.id:
+            PerceptualMatch(a=x,b=y,type=match_type).save()
+        else:
+            PerceptualMatch(a=x,b=y,type=match_type).save()
+    
+    @classmethod
+    def count_bits(cls,n):
+        '''
+        Integer sorcery counts bits efficiently in a 64 bit number
+        https://stackoverflow.com/questions/9829578/fast-way-of-counting-non-zero-bits-in-positive-integer'''
+        n = (n & 0x5555555555555555) + ((n & 0xAAAAAAAAAAAAAAAA) >> 1)
+        n = (n & 0x3333333333333333) + ((n & 0xCCCCCCCCCCCCCCCC) >> 2)
+        n = (n & 0x0F0F0F0F0F0F0F0F) + ((n & 0xF0F0F0F0F0F0F0F0) >> 4)
+        n = (n & 0x00FF00FF00FF00FF) + ((n & 0xFF00FF00FF00FF00) >> 8)
+        n = (n & 0x0000FFFF0000FFFF) + ((n & 0xFFFF0000FFFF0000) >> 16)
+        n = (n & 0x00000000FFFFFFFF) + ((n & 0xFFFFFFFF00000000) >> 32) # This last & isn't strictly necessary.
+        return n
 # class PerceptualHash(Models.model):
 #     class Meta:
 #         abstract=True
@@ -235,4 +299,4 @@ class CollectionMetadata(models.Model):
 #     '''Perceptual hashes for broad phase perceptual matching
 #     Actual file contents should be evaluated to calculate perceptual match'''
 #     value=BigIntegerField()
-#     managed_files= models.ManyToManyField("ManagedFile",related_name='+')
+#     managed_files= models.ManyToManyField("ManagedFile",related_name='dhashes')
