@@ -1,4 +1,4 @@
-# Retcon
+# Retcon ![Django CI](https://github.com/bbappserver/retcon/workflows/Django%20CI/badge.svg)
 ## Why is it called retcon
  Retcon means retroactive continuity, I needed a name that decribed function and would not conflict with other app names so I choe retcon.
 
