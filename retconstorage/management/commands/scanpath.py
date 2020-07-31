@@ -10,8 +10,8 @@ class Command(BaseCommand):
     help = 'Scan files at the specified path and add them as path relative to prefix'
 
     def add_arguments(self, parser):
-        parser.add_argument('root', nargs=1, type=str)
         parser.add_argument('prefix', nargs=1, type=str)
+        parser.add_argument('root', nargs=1, type=str)
 
     def handle(self, *args, **options):
 
@@ -31,8 +31,9 @@ class Command(BaseCommand):
             aroot = os.path.abspath(root)
             eroot = aroot.replace(prefix, "")
             with transaction.atomic():
+                spin.next()
                 for file in files:
-                    spin.next()
+                    
                     if file[0] == '.':  # skip hidden
                         continue
 
