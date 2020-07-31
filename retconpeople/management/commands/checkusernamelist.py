@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # domain="twitter.com"
-        domain = args['domain']
+        domain = options['domain'][0]
 
         ul = []
         #trim null names
