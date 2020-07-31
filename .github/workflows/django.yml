@@ -1,10 +1,7 @@
 name: Django CI
 
 on:
-  push:
-    branches: [ develop ]
-  pull_request:
-    branches: [ develop ]
+  [push,pull_request,workflow_dispatch]
 
 jobs:
   build:
