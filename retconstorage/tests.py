@@ -61,20 +61,41 @@ class ImageSequenceCompareTest(TestCase):
                 self.assertTrue(len(list(seq.frames()))>0)
                 self.assertTrue(len(list(seq.frames()))>0)
 
-    def testCompareImageToImage(self):
-        raise NotImplementedError(self)
-
     def testCompareVideoToShrink(self):
-        raise NotImplementedError()
+        pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
+        pb=os.path.join(self.basedir, 'test/bigbuckclippedshrink.mp4')
+        a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        
+        overlap=ImageSequenceComparer(a,b).cmp()
+        self.assertTrue(len(overlap)>0)
+
 
     def testCompareVideoToShrinkClipped(self):
-        raise NotImplementedError()
+        pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
+        pb=os.path.join(self.basedir, 'test/bigbuckclippedshrinkcut.mp4')
+        a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        
+        overlap=ImageSequenceComparer(a,b).cmp()
+        self.assertTrue(len(overlap)>0)
 
     def testCompareVideoShrinkToShrinkClipped(self):
-        raise NotImplementedError()
+        pa=os.path.join(self.basedir, 'test/bigbuckclippedshrink.mp4')
+        pb=os.path.join(self.basedir, 'test/bigbuckclippedshrinkcut.mp4')
+        a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
 
+        overlap=ImageSequenceComparer(a,b).cmp()
+        self.assertTrue(len(overlap)>0)
     def testCompareVideoToAnimatedGif(self):
-        raise NotImplementedError()
+        pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
+        pb=os.path.join(self.basedir, 'test/bigbuckclippedshrinkcut.gif')
+        a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_GIF)
+
+        overlap=ImageSequenceComparer(a,b).cmp()
+        self.assertTrue(len(overlap)>0)
 
     def testCompareVideoToStill(self):
         raise NotImplementedError()
@@ -99,14 +120,34 @@ class ImageSequenceCompareTest(TestCase):
 
 class DhashTest(TestCase):
 
+    basedir=os.path.dirname(__file__)
+
     def testDhashStill(self):
-        raise NotImplementedError
+        path=os.path.join(self.basedir, 'test/big*.jpg')
+        l=glob(path)
+        for p in l:
+            with self.subTest("load "+p):
+                a= ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_STILL_IMAGE)
+                h=dhash(a)
+                self.assertTrue(len(h)==1)
     
     def testDhashAnimatedGIF(self):
-        raise NotImplementedError
+        path=os.path.join(self.basedir, 'test/big*.gif')
+        l=glob(path)
+        for p in l:
+            with self.subTest("load "+p):
+                a= ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_GIF)
+                h=dhash(a)
+                self.assertTrue(len(h)>1)
     
     def testDhashVideo(self):
-        raise NotImplementedError
+        path=os.path.join(self.basedir, 'test/big*.mp4')
+        l=glob(path)
+        for p in l:
+            with self.subTest("load "+p):
+                a= ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+                h=dhash(a)
+                self.assertTrue(len(h)>1)
     
     def testDhashcompareStillAndStill(self):
         raise NotImplementedError

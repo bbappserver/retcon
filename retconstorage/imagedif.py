@@ -1,5 +1,18 @@
 from PIL import Image,ImageFilter,ImageSequence
 import array
+try:
+    import numpy as np
+except ImportError:
+        logger.error('Numpy must be installed to visually hash')
+        raise ValueError('Numpy must be installed to visually hash')
+
+try:
+    import cv2
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.error('OpenCV must be installed to visually hash videos')
+    raise ValueError('OpenCV must be installed to visually hash videos')
 
 SOBEL_MAT_X=(
     1,0,-1,
@@ -23,6 +36,8 @@ class ImageSequenceSource:
         self._frames=None
         self._keyframes=None
         self._im=None
+        self._resize_shape=None
+        self._resample_mode=3
         self._sequence_type=sequence_type
         self.keyframe_delta_threshold=keyframe_delta_threshold
         self.color_depth=color_depth
@@ -35,7 +50,6 @@ class ImageSequenceSource:
             self._im = Image.open(abspath)
             self._frames=[self._im]
             self._keyframes=[self._im]
-            self._im.close()
         elif sequence_type == self.SEQUENCE_TYPE_GIF:
             self._im = Image.open(abspath)
             self._keyframes=ImageSequence.Iterator(self._im)
@@ -61,22 +75,74 @@ class ImageSequenceSource:
     
     def keyframes(self):
         if self._keyframes is None and self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
-            return self._filter_video_keyframes()
+            # raise NotImplementedError('Frames and keyframes needs to be modified to do this correctly for each source type')
+            # return self._filter_video_keyframes()
+            if self._resize_shape:
+                return (cv2.resize(x,self._resize_shape) for x in self._filter_video_keyframes())
+            else:
+                return (x for x in self._filter_video_keyframes())
         
         elif self.SEQUENCE_TYPE_GIF == self._sequence_type:
             # return a new iterator every time, so this call is repeatable
-            return ImageSequence.Iterator(self._im)
+            return (np.asarray(x) for x in ImageSequence.Iterator(self._im))
 
+        if self._resize_shape is None:
+            self._keyframes=[self._im]
+        else:
+            im=self._im.resize(self._resize_shape,resample=self._resample_mode)
+            self._keyframes=[im]
+        
         return self._keyframes
     
     def frames(self):
         if self._frames is None and self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
-            return (x for x in self._load_video())
+            # raise NotImplementedError('Frames and keyframes needs to be modified to do this correctly for each source type')
+            if self._resize_shape:
+                return (cv2.resize(x,self._resize_shape) for x in self._load_video())
+            else:
+                return (x for x in self._load_video())
         elif self.SEQUENCE_TYPE_GIF == self._sequence_type:
             # return a new iterator every time, so this call is repeatable
-            return ImageSequence.Iterator(self._im)
+            if self._resize_shape is not None:
+                im=self._im.resize(self._resize_shape,resample=self._resample_mode)
+            else:
+                im=self._im
+            return (np.asarray(x) for x in ImageSequence.Iterator(im))
         else:
+            if self._resize_shape is not None:
+                im=self._im.resize(self._resize_shape,resample=self._resample_mode)
+                self._frames=[im]
+            else:
+                self._frames=[np.asarray(self._im)]
             return self._frames
+
+    def resize(self,shape,resample=3):
+        '''Changes the size of frames generated so unlike frames can be compared'''
+        self._resize_shape=shape
+        self._resample_mode=resample
+
+    @property
+    def shape(self):
+        if self._resize_shape is not None:
+            return self._resize_shape
+        else:
+            if self.SEQUENCE_TYPE_VIDEO == self._sequence_type:
+                try:
+                    import cv2
+                except ImportError:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error('OpenCV must be installed to visually hash videos')
+                    raise ValueError('OpenCV must be installed to visually hash videos')
+                cap = self._im
+                frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                frameHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                return (frameWidth,frameHeight)
+            else:
+                return self._im.size
+    
+    @property 
+    def size(self): return self.shape
 
     @property
     def frame_count(self):
@@ -92,7 +158,7 @@ class ImageSequenceSource:
             frameCount = int(self._im.get(cv2.CAP_PROP_FRAME_COUNT))
             return frameCount
         elif self._sequence_type == self.SEQUENCE_TYPE_GIF:
-            return len(self.frames())
+            return len(list(self.frames()))
         else:
             return 1 #stillimage
 
@@ -167,10 +233,11 @@ def dhash(image_sequence):
     https://web.archive.org/save/http://www.hackerfactor.com/blog/?/archives/529-Kind-of-Like-That.html
     '''
     sigs=[]
-    for i in image_sequence:
-        i=i.resize(9,8,resample=Image.BICUBIC) #shrink
-        i=i.convert("L") #Greyscale
-        s=i.filter(SOBEL_KERNEL_X) #generate gradient
+    old_size=image_sequence.shape
+    image_sequence.resize((9,8)) #shrink
+    image_sequence.convert("L") #Greyscale
+    image_sequence.filter(SOBEL_KERNEL_X)
+    for i in image_sequence.keyframes():
         sig=0
         i=0
 
@@ -184,6 +251,7 @@ def dhash(image_sequence):
                     prev=column
                     i+=1
         sigs.append(sig)
+    image_sequence.resize(old_size)
     return sigs
 
 
@@ -195,25 +263,45 @@ class ImageSequenceComparer:
 
     def image_distance(self,a,b):
         e=a-b
-        return np.median(e)
+        return np.mean(e)
 
     def cmp(self):
         
-        # b should definitely be the shorter one if 
+        # b should definitely be the shorter duration if possible
         if self._b.frame_count > self._a.frame_count:
-            a=self._b.keyframes()
-            b=self._a.keyframes()
+            a=self._b
+            b=self._a
         else:
-            a=self._a.keyframes()
-            b=self._b.keyframes()
+            a=self._a
+            b=self._b
 
+        #Match dimensions
+        dim_a = a.shape
+        dim_b = b.shape
+        if dim_a != dim_b:
+            w=0
+            h=0
+            if dim_a[0] < dim_b[0]: 
+                w=dim_a[0]
+            else: 
+                w=dim_b[0]
+            
+            if dim_a[1] < dim_b[1]: 
+                h=dim_a[1]
+            else: 
+                h=dim_b[1]
 
+            a.resize((w,h))
+            b.resize((w,h))
+
+        a=a.keyframes()
+        b=b.keyframes()
         i=0
         match_spans=[]
         for fa in a:
             j=0
             for fb in b:
-                e = self.image_distance(a,b)
+                e = self.image_distance(fa,fb)
                 start_frames=None
                 if e<tolerance:
                     #fa and fb match
