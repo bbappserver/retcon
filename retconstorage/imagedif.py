@@ -22,6 +22,7 @@ class ImageSequenceSource:
         self.path=abspath
         self._frames=None
         self._keyframes=None
+        self._im=None
         self._sequence_type=sequence_type
         self.keyframe_delta_threshold=keyframe_delta_threshold
         self.color_depth=color_depth
@@ -55,7 +56,7 @@ class ImageSequenceSource:
     def __del__(self):
         if self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
             self._im.release()
-        else:
+        elif self._im is not None:
             self._im.close()
     
     def keyframes(self):
@@ -70,12 +71,12 @@ class ImageSequenceSource:
     
     def frames(self):
         if self._frames is None and self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
-            self._frames=self._load_video()
+            return (x for x in self._load_video())
         elif self.SEQUENCE_TYPE_GIF == self._sequence_type:
             # return a new iterator every time, so this call is repeatable
             return ImageSequence.Iterator(self._im)
-        
-        return self._frames
+        else:
+            return self._frames
 
     @property
     def frame_count(self):
@@ -112,11 +113,14 @@ class ImageSequenceSource:
             yield f
     
     def _filter_video_keyframes(self):
+
         try:
-            import numpy as np
+            import cv2
         except ImportError:
-                logger.error('Numpy must be installed to visually hash videos')
-                raise ValueError('Numpy must be installed to visually hash videos')
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error('OpenCV must be installed to visually hash videos')
+            raise ValueError('OpenCV must be installed to visually hash videos')
         cap = self._im
         frameCount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -189,16 +193,19 @@ class ImageSequenceComparer:
         self._a=sequence_a
         self._b=sequence_b
 
+    def image_distance(self,a,b):
+        e=a-b
+        return np.median(e)
+
     def cmp(self):
-        raise NotImplementedError()
         
         # b should definitely be the shorter one if 
-        if b.frame_count > a.frame_count:
-            a=self._b
-            b=self._a
+        if self._b.frame_count > self._a.frame_count:
+            a=self._b.keyframes()
+            b=self._a.keyframes()
         else:
-            a=self._a
-            b=self._b
+            a=self._a.keyframes()
+            b=self._b.keyframes()
 
 
         i=0
@@ -206,7 +213,7 @@ class ImageSequenceComparer:
         for fa in a:
             j=0
             for fb in b:
-                e = image_distance(a,b)
+                e = self.image_distance(a,b)
                 start_frames=None
                 if e<tolerance:
                     #fa and fb match
