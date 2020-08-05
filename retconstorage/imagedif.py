@@ -100,20 +100,20 @@ class ImageSequenceSource:
             if self._resize_shape:
                 return (cv2.resize(x,self._resize_shape) for x in self._load_video())
             else:
-                return (x for x in self._load_video())
+                return (ImageWrapper(x)  for x in self._load_video())
         elif self.SEQUENCE_TYPE_GIF == self._sequence_type:
             # return a new iterator every time, so this call is repeatable
             if self._resize_shape is not None:
                 im=self._im.resize(self._resize_shape,resample=self._resample_mode)
             else:
                 im=self._im
-            return (np.asarray(x) for x in ImageSequence.Iterator(im))
+            return (ImageWrapper(x) for x in ImageSequence.Iterator(im))
         else:
             if self._resize_shape is not None:
                 im=self._im.resize(self._resize_shape,resample=self._resample_mode)
-                self._frames=[im]
+                self._frames=[ImageWrapper(im)]
             else:
-                self._frames=[np.asarray(self._im)]
+                self._frames=[ImageWrapper(self._im)]
             return self._frames
 
     def resize(self,shape,resample=3):
@@ -253,6 +253,56 @@ def dhash(image_sequence):
         sigs.append(sig)
     image_sequence.resize(old_size)
     return sigs
+
+class ImageWrapper:
+    '''Depending on whether an image originates from PIL or OpenCV it has a different format and operations.
+    This class is a wrapper making them behave the same so analysis algorithms don't have to be concerned about this.
+    It closely mirrors PIL's Image interface.'''
+
+    IMAGE_TYPE_PIL=0
+    IMAGE_TYPE_NUMPY_RGB8=1
+    IMAGE_TYPE_NUMPY_GREY8=2
+    def __init__(self,img,bit_depth=8):
+        self._source_img=img
+        self._img=img
+        self._type=None
+        if bit_depth != 8:
+            raise NotImplementedError("Non 8 bit images not currently supported")
+        if isinstance(img,PIL.Image): 
+            self._type=self.IMAGE_TYPE_PIL
+        elif isinstance(img,np.ndarray):
+            if img.shape[2] == 3:
+                self._type=self.IMAGE_TYPE_NUMPY_RGB8
+            elif lean(img.shape)==2:
+                self._type=self.IMAGE_TYPE_NUMPY_GREY8
+    
+    def as_array(self):
+        '''Returns this image as a 3D numpy array of bands'''
+        return numpy.array(self._img)
+
+    def as_PIL_Image(self):
+        if self._type == self.IMAGE_TYPE_PIL:
+            return self._img
+        elif self._type==self.IMAGE_TYPE_NUMPY_RGB8:
+            return Image.fromarray(arr, 'RGB')
+        elif self._type==self.IMAGE_TYPE_NUMPY_GREY8:
+            return Image.fromarray(arr, 'L')
+        else:
+            raise ValueError('self._type set incorectly')
+
+    def convert(self,colorspace):
+        '''Changes the colorspace of the returned image matching PIL.Image.convert'''
+        self._img=self.as_PIL_Image()
+        self._img.convert(colorspace)
+
+    def resize(self,dim,resample=3): 
+        '''Changes the colorspace of the returned image matching PIL.Image.resize'''
+        #3 is the default mode for pil resize
+        self._img=self.as_PIL_Image()
+        self._img=self._img.resize(dim,resample=resample)
+
+
+                
 
 
 class ImageSequenceComparer:
