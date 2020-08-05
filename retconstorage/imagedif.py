@@ -39,7 +39,6 @@ class ImageSequenceSource:
             self._im = Image.open(abspath)
             self._keyframes=ImageSequence.Iterator(self._im)
             self._frames=ImageSequence.Iterator(self._im)
-            self._im.close()
         elif sequence_type == self.SEQUENCE_TYPE_VIDEO:
             try:
                 import cv2
@@ -62,13 +61,39 @@ class ImageSequenceSource:
     def keyframes(self):
         if self._keyframes is None and self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
             return self._filter_video_keyframes()
-        else:
-            return self._keyframes
+        
+        elif self.SEQUENCE_TYPE_GIF == self._sequence_type:
+            # return a new iterator every time, so this call is repeatable
+            return ImageSequence.Iterator(self._im)
+
+        return self._keyframes
     
     def frames(self):
         if self._frames is None and self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
             self._frames=self._load_video()
+        elif self.SEQUENCE_TYPE_GIF == self._sequence_type:
+            # return a new iterator every time, so this call is repeatable
+            return ImageSequence.Iterator(self._im)
+        
         return self._frames
+
+    @property
+    def frame_count(self):
+
+        if self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
+            try:
+                import cv2
+            except ImportError:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error('OpenCV must be installed to visually hash videos')
+                raise ValueError('OpenCV must be installed to visually hash videos')
+            frameCount = int(self._im.get(cv2.CAP_PROP_FRAME_COUNT))
+            return frameCount
+        elif self._sequence_type == self.SEQUENCE_TYPE_GIF:
+            return len(self.frames())
+        else:
+            return 1 #stillimage
 
     def _load_video(self):
         try:
@@ -166,9 +191,16 @@ class ImageSequenceComparer:
 
     def cmp(self):
         raise NotImplementedError()
-        a=self._a
-        b=self._b
-        #TODO b should definitely be the shorter one if possible
+        
+        # b should definitely be the shorter one if 
+        if b.frame_count > a.frame_count:
+            a=self._b
+            b=self._a
+        else:
+            a=self._a
+            b=self._b
+
+
         i=0
         match_spans=[]
         for fa in a:
@@ -195,4 +227,9 @@ class ImageSequenceComparer:
                         break
                 j+=1
             i+=1
+        return match_spans
+    
+    def still_match(self):
+        '''convenience method for still images'''
+        return self.cmp()[0]==(0,1)
         

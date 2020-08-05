@@ -17,6 +17,7 @@ class ImageSequenceCompareTest(TestCase):
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_STILL_IMAGE)
                 self.assertTrue(len(list(seq.frames()))>0)
+                self.assertTrue(len(list(seq.frames()))>0)
 
     def testLoadAnimatedGIF(self):
         path=os.path.join(self.basedir, 'test/big*.gif')
@@ -26,6 +27,7 @@ class ImageSequenceCompareTest(TestCase):
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_GIF)
+                self.assertTrue(len(list(seq.frames()))>0)
                 self.assertTrue(len(list(seq.frames()))>0)
 
     def testLoadVideo(self):
@@ -37,6 +39,7 @@ class ImageSequenceCompareTest(TestCase):
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
                 self.assertTrue(len(list(seq.frames()))>0)
+                self.assertTrue(len(list(seq.frames()))>0)
         
         path=os.path.join(self.basedir, 'test/big*.avi')
         l=glob(path)
@@ -46,6 +49,7 @@ class ImageSequenceCompareTest(TestCase):
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
                 self.assertTrue(len(list(seq.frames()))>0)
+                self.assertTrue(len(list(seq.frames()))>0)
 
         path=os.path.join(self.basedir, 'test/big*.wmv')
         l=glob(path)
@@ -54,6 +58,7 @@ class ImageSequenceCompareTest(TestCase):
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+                self.assertTrue(len(list(seq.frames()))>0)
                 self.assertTrue(len(list(seq.frames()))>0)
 
     def testCompareImageToImage(self):
