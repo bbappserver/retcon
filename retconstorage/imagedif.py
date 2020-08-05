@@ -36,8 +36,6 @@ class ImageSequenceSource:
         self._frames=None
         self._keyframes=None
         self._im=None
-        self._resize_shape=None
-        self._resample_mode=3
         self._sequence_type=sequence_type
         self.keyframe_delta_threshold=keyframe_delta_threshold
         self.color_depth=color_depth
@@ -75,71 +73,41 @@ class ImageSequenceSource:
     
     def keyframes(self):
         if self._keyframes is None and self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
-            # raise NotImplementedError('Frames and keyframes needs to be modified to do this correctly for each source type')
-            # return self._filter_video_keyframes()
-            if self._resize_shape:
-                return (cv2.resize(x,self._resize_shape) for x in self._filter_video_keyframes())
-            else:
-                return (x for x in self._filter_video_keyframes())
-        
+            return (ImageWrapper(x) for x in self._filter_video_keyframes())
         elif self.SEQUENCE_TYPE_GIF == self._sequence_type:
             # return a new iterator every time, so this call is repeatable
-            return (np.asarray(x) for x in ImageSequence.Iterator(self._im))
-
-        if self._resize_shape is None:
-            self._keyframes=[self._im]
+            return (ImageWrapper(x) for x in ImageSequence.Iterator(self._im))
         else:
-            im=self._im.resize(self._resize_shape,resample=self._resample_mode)
-            self._keyframes=[im]
-        
-        return self._keyframes
+            self._keyframes=[self._im]
+            return self._keyframes
     
     def frames(self):
         if self._frames is None and self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
             # raise NotImplementedError('Frames and keyframes needs to be modified to do this correctly for each source type')
-            if self._resize_shape:
-                return (cv2.resize(x,self._resize_shape) for x in self._load_video())
-            else:
-                return (ImageWrapper(x)  for x in self._load_video())
+            return (ImageWrapper(x)  for x in self._load_video())
         elif self.SEQUENCE_TYPE_GIF == self._sequence_type:
             # return a new iterator every time, so this call is repeatable
-            if self._resize_shape is not None:
-                im=self._im.resize(self._resize_shape,resample=self._resample_mode)
-            else:
-                im=self._im
             return (ImageWrapper(x) for x in ImageSequence.Iterator(im))
         else:
-            if self._resize_shape is not None:
-                im=self._im.resize(self._resize_shape,resample=self._resample_mode)
-                self._frames=[ImageWrapper(im)]
-            else:
-                self._frames=[ImageWrapper(self._im)]
+            self._frames=[ImageWrapper(self._im)]
             return self._frames
-
-    def resize(self,shape,resample=3):
-        '''Changes the size of frames generated so unlike frames can be compared'''
-        self._resize_shape=shape
-        self._resample_mode=resample
 
     @property
     def shape(self):
-        if self._resize_shape is not None:
-            return self._resize_shape
+        if self.SEQUENCE_TYPE_VIDEO == self._sequence_type:
+            try:
+                import cv2
+            except ImportError:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error('OpenCV must be installed to visually hash videos')
+                raise ValueError('OpenCV must be installed to visually hash videos')
+            cap = self._im
+            frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            frameHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            return (frameWidth,frameHeight)
         else:
-            if self.SEQUENCE_TYPE_VIDEO == self._sequence_type:
-                try:
-                    import cv2
-                except ImportError:
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error('OpenCV must be installed to visually hash videos')
-                    raise ValueError('OpenCV must be installed to visually hash videos')
-                cap = self._im
-                frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                frameHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                return (frameWidth,frameHeight)
-            else:
-                return self._im.size
+            return self._im.size
     
     @property 
     def size(self): return self.shape
