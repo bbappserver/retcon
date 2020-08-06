@@ -227,6 +227,19 @@ def dhash(image_sequence):
         sigs.append(sig)
     return sigs
 
+def bit_hamming_distance(a,b,nbits=64):
+    c= a^b
+    return bit_count(c,nbits=nbits)
+
+def bit_count(x,nbits=64):
+    n=0
+    for i in range(n):
+        if x&1==1:
+            n+=1
+        x>>=1
+    
+    return n
+
 class ImageWrapper:
     '''Depending on whether an image originates from PIL or OpenCV it has a different format and operations.
     This class is a wrapper making them behave the same so analysis algorithms don't have to be concerned about this.
@@ -273,9 +286,9 @@ class ImageWrapper:
         if self._type == self.IMAGE_TYPE_PIL:
             return self._img
         elif self._type==self.IMAGE_TYPE_NUMPY_RGB8:
-            return Image.fromarray(self._img, 'RGB')
+            return Image.fromarray(np.copy(self._img), 'RGB')
         elif self._type==self.IMAGE_TYPE_NUMPY_GREY8:
-            return Image.fromarray(self._img, 'L')
+            return Image.fromarray(np.copy(self._img), 'L')
         else:
             raise ValueError('self._type set incorectly')
 
@@ -307,10 +320,17 @@ class ImageSequenceComparer:
 
     def image_distance(self,a,b,depth=255):
         e=a-b
-        return np.mean(e)/depth
+        return np.median(e)/depth
 
-    def cmp(self,tolerance=.03):
+    def cmp(self,tolerance=.03,min_frames=5,look_ahead=10):
         
+        #For still images, just fudege the frames to 1
+        if self._a.frame_count == 1 or self._b.frame_count == 1:
+            min_frames=1
+        
+        if self._a.frame_count<min_frames or self._b.frame_count < min_frames:
+            return []
+
         # b should definitely be the shorter duration if possible
         if self._b.frame_count > self._a.frame_count:
             a=self._b
@@ -322,40 +342,63 @@ class ImageSequenceComparer:
         #Match dimensions
         dim_a = a.shape
         dim_b = b.shape
-        if dim_a != dim_b:
+        dimensions_mismatch=dim_a != dim_b
+        if dimensions_mismatch:
             w=0
             h=0
-            if dim_a[0] < dim_b[0]: 
+            if dim_a[0] <= dim_b[0]: 
                 w=dim_a[0]
             else: 
                 w=dim_b[0]
             
-            if dim_a[1] < dim_b[1]: 
+            if dim_a[1] <= dim_b[1]: 
                 h=dim_a[1]
             else: 
                 h=dim_b[1]
         
-        #TODO match colorspaces for now just force to RGB8
+        
         target_colorspace="RGB"
 
-        a=a.keyframes()
-        b=b.keyframes()
+        a=a.frames()
+        b=b.frames()
+
+        na=[]
+        nb=[]
+        for f in a:
+            if dimensions_mismatch:
+                f.resize((w,h))
+            f.convert(target_colorspace)
+            na.append(f.as_array())
+        
+        for f in b:
+            if dimensions_mismatch:
+                f.resize((w,h))
+            f.convert(target_colorspace)
+            nb.append(f.as_array())
+
         i=0
+        j=0
         match_spans=[]
-        for fa in a:
+        start_frames=None
+        #TODO be smarter about freeing passed frames
+        # el=[] #DEBUG collect errors
+        N=len(na)
+        while i < N:
             j=0
-            for fb in b:
-                fa.resize((w,h))
-                fb.resize((w,h))
-                fa.convert(target_colorspace)
-                fb.convert(target_colorspace)
-                fa=fa.as_array()
-                fb=fb.as_array()
+            fa=na[i]
+            for M in range(len(nb)):
+                fb=nb[j]
                 e = self.image_distance(fa,fb)
-                start_frames=None
+                # el.append(e) #DEBUG collect errors
                 if e<tolerance:
                     #fa and fb match
                     if start_frames is None:
+                        #Look ahead to see if this was really the best match
+                        #or just coincidentally similar
+                        #stream b is repeated constantly so we only have to consider i and fa
+                        #consider not just this frame but the error of the frame after it, as this framem ight be a conincidence
+                        i, e = self.look_ahead(e, na, i, fb, look_ahead, nb, j)
+                        #end lookahead
                         start_frames=(i,j)
                 else:
                     if start_frames is not None:
@@ -363,18 +406,98 @@ class ImageSequenceComparer:
                         end_frames=(i,j)
 
                         #filter out short common sequences too short probably a black frame or something
-                        if end_frames[0]-start_frames[0] >30 and end_frames[1]-start_frames[1] >30:
+                        if end_frames[0]-start_frames[0] >min_frames:
                             t=(start_frames,end_frames)
                             match_spans.append(t)
-                            start_frames=None
-                            
-                        #TODO if match type is random subsequence end early
-                        break
+                        start_frames=None
+                
+                if e<tolerance:
+                    i+=1 # i moves with j while frames match              
                 j+=1
+
+            #Grab the trailing span
+            if start_frames is not None:
+                end_frames=(i,j)
+                if end_frames[0]-start_frames[0] >min_frames:
+                    t=(start_frames,end_frames)
+                    match_spans.append(t)
             i+=1
+
         return match_spans
+
+    def look_ahead(self, e, na, i, fb, look_ahead, nb, j):
+        #Look ahead to see if this was really the best match
+        #or just coincidentally similar
+        #stream b is repeated constantly so we only have to consider i and fa
+
+        try:
+            base_i=i
+            e_cand_cum = e
+            for ela in range(1,look_ahead):
+                e_cand_cum += self.image_distance(na[base_i+ela],fb[base_i+ela])
+            
+            for la in range(1,look_ahead):
+                fa_alt=na[base_i+la]
+                e_alt = self.image_distance(fa_alt,fb)
+                e_alt_cum=e_alt
+                for ela in range(1,look_ahead):
+                    #consider not just this frame but the error of the frames after it,
+                    # as this frame might be a conincidence
+                    fa_alt_ahead=na[base_i+la+ela]
+                    fb_alt_ahead=nb[j+ela]
+                    e_alt_cum += self.image_distance(fa_alt_ahead,fb_alt_ahead)
+                if e_alt_cum < e_cand_cum:
+                    #Found a better frame
+                    i=base_i+la
+                    e=e_alt
+                    e_cand_cum=e_alt_cum
+        except IndexError:
+            #whoops overstepped the frames, no biggy
+            pass
+        return i, e
     
+    def refine_match_spans(self,spans):
+        '''More agressivly try to match spans based on preliminary findings by cmp()'''
+        raise NotImplementedError()
+
+        if len(spans) <=1:
+            return spans
+        
+        a=spans[0]
+        newspans=[]
+        i=0
+        t=None
+        while i <len(spans):
+            b=spans[i]
+            
+            if b[0][0]-a[1][0] < 2:
+                x_start=a[0][0]
+                x_end=b[1][0]
+
+                y_start=a[0][1]
+                y_end=b[1][1]
+                t=((x_start,y_start),(x_end,y_end))
+                a=t
+            else:
+                if t is None:
+                    newspans.append(b)
+                else:
+                    newspans.append(t)
+                t=None
+                a=b
+            i+=1
+
+        #This will generate spans that don't quite line up because x will be longer than y
+        #Do a new error calculation on these spans
+        raise NotImplementedError()
+
+        #return results
+        return newspans
+
+        #IF intervals overlap try to merge them and look for a minimized error
+        #If a 1 or 2 frame gap occurs, bridge it
+
     def still_match(self):
         '''convenience method for still images'''
-        return self.cmp()[0]==(0,1)
+        return self.cmp()[0]==((0,0),(1,1))
         

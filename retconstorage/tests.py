@@ -1,4 +1,5 @@
-from django.test import TestCase
+from django.test import TestCase as djTest
+from unittest import TestCase
 from retconstorage.imagedif import ImageSequenceComparer,ImageSequenceSource,dhash
 from glob import glob
 import os.path
@@ -27,8 +28,8 @@ class ImageSequenceCompareTest(TestCase):
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_GIF)
-                self.assertTrue(len(list(seq.frames()))>0)
-                self.assertTrue(len(list(seq.frames()))>0)
+                self.assertTrue(len(list(seq.frames()))>2)
+                self.assertTrue(len(list(seq.frames()))>2)
 
     def testLoadVideo(self):
         path=os.path.join(self.basedir, 'test/big*.mp4')
@@ -38,9 +39,9 @@ class ImageSequenceCompareTest(TestCase):
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
-                self.assertTrue(len(list(seq.frames()))>0)
+                self.assertTrue(len(list(seq.frames()))>5)
                 with self.subTest("repeat "+p):
-                    self.assertTrue(len(list(seq.frames()))>0)
+                    self.assertTrue(len(list(seq.frames()))>5)
         
         path=os.path.join(self.basedir, 'test/big*.avi')
         l=glob(path)
@@ -49,9 +50,9 @@ class ImageSequenceCompareTest(TestCase):
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
-                self.assertTrue(len(list(seq.frames()))>0)
+                self.assertTrue(len(list(seq.frames()))>5)
                 with self.subTest("repeat "+p):
-                    self.assertTrue(len(list(seq.frames()))>0)
+                    self.assertTrue(len(list(seq.frames()))>5)
 
         path=os.path.join(self.basedir, 'test/big*.wmv')
         l=glob(path)
@@ -60,10 +61,30 @@ class ImageSequenceCompareTest(TestCase):
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
-                self.assertTrue(len(list(seq.frames()))>0)
+                self.assertTrue(len(list(seq.frames()))>5)
                 with self.subTest("repeat "+p):
-                    self.assertTrue(len(list(seq.frames()))>0)
+                    self.assertTrue(len(list(seq.frames()))>5)
 
+    def testCompareVideoToSelf(self):
+        pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
+        pb=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
+        a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+
+        import numpy as np
+        fla=list(a.frames())
+        flb=list(b.frames())
+        for i in range(a.frame_count):
+            fa=fla[i].as_array()
+            fb=flb[i].as_array()
+            self.assertTrue(np.array_equal(fa,fb))
+        
+        a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+
+        
+        overlap=ImageSequenceComparer(a,b).cmp()
+        self.assertTrue(len(overlap)==1)
     def testCompareVideoToShrink(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
         pb=os.path.join(self.basedir, 'test/bigbuckclippedshrink.mp4')
@@ -152,22 +173,22 @@ class DhashTest(TestCase):
                 h=dhash(a)
                 self.assertTrue(len(h)>1)
     
-    def testDhashcompareStillAndStill(self):
-        raise NotImplementedError
-    def testDhashcompareStillAndVideo(self):
-        raise NotImplementedError
-    def testDhashcompareStillAndGIF(self):
-        raise NotImplementedError
+    # def testDhashcompareStillAndStill(self):
+    #     raise NotImplementedError
+    # def testDhashcompareStillAndVideo(self):
+    #     raise NotImplementedError
+    # def testDhashcompareStillAndGIF(self):
+    #     raise NotImplementedError
 
-    def testDhashcompareGIFAndGIF(self):
-        raise NotImplementedError
+    # def testDhashcompareGIFAndGIF(self):
+    #     raise NotImplementedError
 
-    def testDhashcompareGIFAndVideo(self):
-        raise NotImplementedError
+    # def testDhashcompareGIFAndVideo(self):
+    #     raise NotImplementedError
 
-    def testDhashcompareVideoAndVideo(self):
-        raise NotImplementedError
+    # def testDhashcompareVideoAndVideo(self):
+    #     raise NotImplementedError
 
-    def testDhashcompareAll(self):
-        '''Check that if all media types are in a table they are detected as overlapping'''
-        raise NotImplementedError
+    # def testDhashcompareAll(self):
+    #     '''Check that if all media types are in a table they are detected as overlapping'''
+    #     raise NotImplementedError
