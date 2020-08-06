@@ -39,7 +39,8 @@ class ImageSequenceCompareTest(TestCase):
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
                 self.assertTrue(len(list(seq.frames()))>0)
-                self.assertTrue(len(list(seq.frames()))>0)
+                with self.subTest("repeat "+p):
+                    self.assertTrue(len(list(seq.frames()))>0)
         
         path=os.path.join(self.basedir, 'test/big*.avi')
         l=glob(path)
@@ -49,7 +50,8 @@ class ImageSequenceCompareTest(TestCase):
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
                 self.assertTrue(len(list(seq.frames()))>0)
-                self.assertTrue(len(list(seq.frames()))>0)
+                with self.subTest("repeat "+p):
+                    self.assertTrue(len(list(seq.frames()))>0)
 
         path=os.path.join(self.basedir, 'test/big*.wmv')
         l=glob(path)
@@ -59,7 +61,8 @@ class ImageSequenceCompareTest(TestCase):
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
                 self.assertTrue(len(list(seq.frames()))>0)
-                self.assertTrue(len(list(seq.frames()))>0)
+                with self.subTest("repeat "+p):
+                    self.assertTrue(len(list(seq.frames()))>0)
 
     def testCompareVideoToShrink(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')

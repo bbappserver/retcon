@@ -46,12 +46,12 @@ class ImageSequenceSource:
         
         if sequence_type == self.SEQUENCE_TYPE_STILL_IMAGE:
             self._im = Image.open(abspath)
-            self._frames=[self._im]
-            self._keyframes=[self._im]
+            # self._frames=[self._im]
+            # self._keyframes=[self._im]
         elif sequence_type == self.SEQUENCE_TYPE_GIF:
             self._im = Image.open(abspath)
-            self._keyframes=ImageSequence.Iterator(self._im)
-            self._frames=ImageSequence.Iterator(self._im)
+            # self._keyframes=ImageSequence.Iterator(self._im)
+            # self._frames=ImageSequence.Iterator(self._im)
         elif sequence_type == self.SEQUENCE_TYPE_VIDEO:
             try:
                 import cv2
@@ -78,7 +78,7 @@ class ImageSequenceSource:
             # return a new iterator every time, so this call is repeatable
             return (ImageWrapper(x) for x in ImageSequence.Iterator(self._im))
         else:
-            self._keyframes=[self._im]
+            self._keyframes=[ImageWrapper(self._im)]
             return self._keyframes
     
     def frames(self):
@@ -87,7 +87,7 @@ class ImageSequenceSource:
             return (ImageWrapper(x)  for x in self._load_video())
         elif self.SEQUENCE_TYPE_GIF == self._sequence_type:
             # return a new iterator every time, so this call is repeatable
-            return (ImageWrapper(x) for x in ImageSequence.Iterator(im))
+            return (ImageWrapper(x) for x in ImageSequence.Iterator(self._im))
         else:
             self._frames=[ImageWrapper(self._im)]
             return self._frames
@@ -138,6 +138,9 @@ class ImageSequenceSource:
             logger = logging.getLogger(__name__)
             logger.error('OpenCV must be installed to visually hash videos')
             raise ValueError('OpenCV must be installed to visually hash videos')
+        #rewind
+        self._im.set(cv2.CAP_PROP_POS_FRAMES,0)
+        #
         frameCount = int(self._im.get(cv2.CAP_PROP_FRAME_COUNT))
         fc=0
         ret=True
@@ -201,13 +204,15 @@ def dhash(image_sequence):
     https://web.archive.org/save/http://www.hackerfactor.com/blog/?/archives/529-Kind-of-Like-That.html
     '''
     sigs=[]
-    old_size=image_sequence.shape
-    image_sequence.resize((9,8)) #shrink
-    image_sequence.convert("L") #Greyscale
-    image_sequence.filter(SOBEL_KERNEL_X)
-    for i in image_sequence.keyframes():
+    
+    for s in image_sequence.keyframes():
         sig=0
         i=0
+        
+        s.resize((9,8)) #shrink
+        s.convert("L") #Greyscale
+        s.filter(SOBEL_KERNEL_X)
+        s=s.as_array()
 
         #test if left >right, if so set bit high
         for row in s:
@@ -216,10 +221,10 @@ def dhash(image_sequence):
                 if prev is not None:
                     if column > prev:
                         sig |= 1<<i
-                    prev=column
-                    i+=1
+                prev=column
+                i+=1
+        
         sigs.append(sig)
-    image_sequence.resize(old_size)
     return sigs
 
 class ImageWrapper:
@@ -232,45 +237,66 @@ class ImageWrapper:
     IMAGE_TYPE_NUMPY_GREY8=2
     def __init__(self,img,bit_depth=8):
         self._source_img=img
+        self._source_img_type=None
         self._img=img
         self._type=None
         if bit_depth != 8:
             raise NotImplementedError("Non 8 bit images not currently supported")
-        if isinstance(img,PIL.Image): 
+        if issubclass(type(img),Image.Image): 
             self._type=self.IMAGE_TYPE_PIL
-        elif isinstance(img,np.ndarray):
-            if img.shape[2] == 3:
-                self._type=self.IMAGE_TYPE_NUMPY_RGB8
-            elif lean(img.shape)==2:
+            self._source_img_type=self.IMAGE_TYPE_PIL
+        elif issubclass(type(img),np.ndarray):
+            if len(img.shape)==2:
                 self._type=self.IMAGE_TYPE_NUMPY_GREY8
+                self._source_image_type=self.IMAGE_TYPE_NUMPY_GREY8
+            elif img.shape[2] == 3:
+                self._type=self.IMAGE_TYPE_NUMPY_RGB8
+                self._source_image_type=self.IMAGE_TYPE_NUMPY_RGB8
+        else:
+            raise ValueError("Unsupported image representation")
+
+        # if self._type != self.IMAGE_TYPE_PIL and not issubclass(type(self._img),np.ndarray):
+        #     breakpoint
     
-    def as_array(self):
+    def as_array(self,copy=True,refcheck=True):
         '''Returns this image as a 3D numpy array of bands'''
-        return numpy.array(self._img)
+        if self._type != self.IMAGE_TYPE_PIL:
+            return self._img
+        else:
+            if copy:
+                return np.array(np.copy(self._img))
+            else:
+                np.array(self._img,refcheck=refcheck)
+
 
     def as_PIL_Image(self):
         if self._type == self.IMAGE_TYPE_PIL:
             return self._img
         elif self._type==self.IMAGE_TYPE_NUMPY_RGB8:
-            return Image.fromarray(arr, 'RGB')
+            return Image.fromarray(self._img, 'RGB')
         elif self._type==self.IMAGE_TYPE_NUMPY_GREY8:
-            return Image.fromarray(arr, 'L')
+            return Image.fromarray(self._img, 'L')
         else:
             raise ValueError('self._type set incorectly')
 
     def convert(self,colorspace):
         '''Changes the colorspace of the returned image matching PIL.Image.convert'''
         self._img=self.as_PIL_Image()
-        self._img.convert(colorspace)
+        self._type=self.IMAGE_TYPE_PIL
+        self._img=self._img.convert(colorspace)
 
     def resize(self,dim,resample=3): 
         '''Changes the colorspace of the returned image matching PIL.Image.resize'''
         #3 is the default mode for pil resize
         self._img=self.as_PIL_Image()
+        self._type=self.IMAGE_TYPE_PIL
         self._img=self._img.resize(dim,resample=resample)
-
-
-                
+    
+    def filter(self,kernel):
+        '''Changes the colorspace of the returned image matching PIL.Image.convert'''
+        self._img=self.as_PIL_Image()
+        self._type=self.IMAGE_TYPE_PIL
+        self._img=self._img.filter(kernel)
 
 
 class ImageSequenceComparer:
@@ -279,11 +305,11 @@ class ImageSequenceComparer:
         self._a=sequence_a
         self._b=sequence_b
 
-    def image_distance(self,a,b):
+    def image_distance(self,a,b,depth=255):
         e=a-b
-        return np.mean(e)
+        return np.mean(e)/depth
 
-    def cmp(self):
+    def cmp(self,tolerance=.03):
         
         # b should definitely be the shorter duration if possible
         if self._b.frame_count > self._a.frame_count:
@@ -308,9 +334,9 @@ class ImageSequenceComparer:
                 h=dim_a[1]
             else: 
                 h=dim_b[1]
-
-            a.resize((w,h))
-            b.resize((w,h))
+        
+        #TODO match colorspaces for now just force to RGB8
+        target_colorspace="RGB"
 
         a=a.keyframes()
         b=b.keyframes()
@@ -319,6 +345,12 @@ class ImageSequenceComparer:
         for fa in a:
             j=0
             for fb in b:
+                fa.resize((w,h))
+                fb.resize((w,h))
+                fa.convert(target_colorspace)
+                fb.convert(target_colorspace)
+                fa=fa.as_array()
+                fb=fb.as_array()
                 e = self.image_distance(fa,fb)
                 start_frames=None
                 if e<tolerance:
