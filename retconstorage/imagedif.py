@@ -166,12 +166,6 @@ class ImageSequenceSource:
 
         refPhase=True
 
-        #TODO This assumes RGB8
-        ref = np.empty(( frameHeight, frameWidth, 3), np.dtype('uint8'))
-        f = np.empty(( frameHeight, frameWidth, 3), np.dtype('uint8'))
-        reft=np.empty(( 9, 9, 3), np.dtype('uint8'))
-        ft=np.empty(( 9, 9, 3), np.dtype('uint8'))
-
         fc = 0
         ret = True
 
@@ -180,19 +174,22 @@ class ImageSequenceSource:
 
         thresh= thresh_percent* (self.color_depth-1)#color integers are zero indexed(black)
 
-        while (fc < frameCount  and ret):
+        ret,reff = cap.read()
+        if not ret: return 
+        yield reff # the first frame is always a keyframe
+        while (fc < frameCount-1  and ret):
             ret,f = cap.read()
-            ft = cv2.resize(f,(9,9), interpolation = cv2.INTER_CUBIC)
-            delta=ft-reft
+            #ft = cv2.resize(f,(9,9), interpolation = cv2.INTER_CUBIC)
+            delta=f-reff
             abs_delta=np.abs(delta)
             mse = np.mean(abs_delta)
             med=np.median(abs_delta)
 
             if mse>thresh and med<max_median_delta:
+                #Found a keyframe
                 yield f
+                reff=f #update the reference frame to this keyframe
 
-            ref=f
-            reft=ft
             fc += 1
 
         
@@ -233,12 +230,25 @@ def bit_hamming_distance(a,b,nbits=64)->int:
     return bit_count(c,nbits=nbits)
 
 def bit_count(x,nbits=64)->int:
+    if nbits == 64: return bit_coutnt_fast_64(n)
     n=0
     for i in range(n):
         if x&1==1:
             n+=1
         x>>=1
     
+    return n
+
+def bit_coutnt_fast_64(n):
+    '''
+    Integer sorcery counts bits efficiently in a 64 bit number
+    https://stackoverflow.com/questions/9829578/fast-way-of-counting-non-zero-bits-in-positive-integer'''
+    n = (n & 0x5555555555555555) + ((n & 0xAAAAAAAAAAAAAAAA) >> 1)
+    n = (n & 0x3333333333333333) + ((n & 0xCCCCCCCCCCCCCCCC) >> 2)
+    n = (n & 0x0F0F0F0F0F0F0F0F) + ((n & 0xF0F0F0F0F0F0F0F0) >> 4)
+    n = (n & 0x00FF00FF00FF00FF) + ((n & 0xFF00FF00FF00FF00) >> 8)
+    n = (n & 0x0000FFFF0000FFFF) + ((n & 0xFFFF0000FFFF0000) >> 16)
+    n = (n & 0x00000000FFFFFFFF) + ((n & 0xFFFFFFFF00000000) >> 32) # This last & isn't strictly necessary.
     return n
 
 class ImageWrapper:
