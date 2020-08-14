@@ -1,4 +1,5 @@
 from PIL import Image,ImageFilter,ImageSequence
+from math import isclose
 import array
 try:
     import numpy as np
@@ -113,7 +114,7 @@ class ImageSequenceSource:
     def size(self): return self.shape
 
     @property
-    def frame_count(self):
+    def frame_count(self) -> int:
 
         if self._sequence_type == self.SEQUENCE_TYPE_VIDEO:
             try:
@@ -197,7 +198,7 @@ class ImageSequenceSource:
         
     
 
-def dhash(image_sequence):
+def dhash(image_sequence) -> list:
     '''Produce an array of dhashes for the given image sequence 
     image_sequence is a generator of RGB images
     size is 9x8 to generate exactly 64 bits
@@ -227,11 +228,11 @@ def dhash(image_sequence):
         sigs.append(sig)
     return sigs
 
-def bit_hamming_distance(a,b,nbits=64):
+def bit_hamming_distance(a,b,nbits=64)->int:
     c= a^b
     return bit_count(c,nbits=nbits)
 
-def bit_count(x,nbits=64):
+def bit_count(x,nbits=64)->int:
     n=0
     for i in range(n):
         if x&1==1:
@@ -314,15 +315,15 @@ class ImageWrapper:
 
 class ImageSequenceComparer:
 
-    def __init__(self,sequence_a,sequence_b):
+    def __init__(self,sequence_a : ImageSequenceSource,sequence_b : ImageSequenceSource):
         self._a=sequence_a
         self._b=sequence_b
 
-    def image_distance(self,a,b,depth=255):
+    def image_distance(self,a,b,depth=255) -> float:
         e=a-b
         return np.median(e)/depth
 
-    def cmp(self,tolerance=.03,min_frames=5,look_ahead=10):
+    def cmp(self,tolerance=.03,min_frames=5,look_ahead=10)-> list:
         
         #For still images, just fudege the frames to 1
         if self._a.frame_count == 1 or self._b.frame_count == 1:
@@ -364,6 +365,16 @@ class ImageSequenceComparer:
 
         na=[]
         nb=[]
+        
+        # #DEBUG, no colorspace ordimension conversion
+        # na=[x.as_array() for x in a]
+        # nb=[x.as_array() for x in b]
+
+        # #DEBUG equality check
+        # for i in range(len(na)):
+        #     if not np.array_equal(na[i],nb[i]):
+        #         print("Array mismatch")
+
         for f in a:
             if dimensions_mismatch:
                 f.resize((w,h))
@@ -385,9 +396,13 @@ class ImageSequenceComparer:
         N=len(na)
         while i < N:
             j=0
-            fa=na[i]
             for M in range(len(nb)):
                 fb=nb[j]
+                #this occurs every iteration as i can be updated in the inner loop
+                #it is important that frame a be updated every time since i might follow j
+                #before fa was only being updated in the outer loop and this caused errors
+                fa=na[i]
+
                 e = self.image_distance(fa,fb)
                 # el.append(e) #DEBUG collect errors
                 if e<tolerance:
@@ -397,7 +412,8 @@ class ImageSequenceComparer:
                         #or just coincidentally similar
                         #stream b is repeated constantly so we only have to consider i and fa
                         #consider not just this frame but the error of the frame after it, as this framem ight be a conincidence
-                        i, e = self.look_ahead(e, na, i, fb, look_ahead, nb, j)
+                        if not isclose(e,0):
+                            i, e = self.look_ahead(e, na, i, fb, look_ahead, nb, j)
                         #end lookahead
                         start_frames=(i,j)
                 else:
@@ -408,11 +424,12 @@ class ImageSequenceComparer:
                         #filter out short common sequences too short probably a black frame or something
                         if end_frames[0]-start_frames[0] >min_frames:
                             t=(start_frames,end_frames)
-                            match_spans.append(t)
+                            yield t
                         start_frames=None
                 
                 if e<tolerance:
-                    i+=1 # i moves with j while frames match              
+                    i+=1 # i moves with j while frames match
+                    
                 j+=1
 
             #Grab the trailing span
@@ -420,10 +437,8 @@ class ImageSequenceComparer:
                 end_frames=(i,j)
                 if end_frames[0]-start_frames[0] >min_frames:
                     t=(start_frames,end_frames)
-                    match_spans.append(t)
+                    yield t
             i+=1
-
-        return match_spans
 
     def look_ahead(self, e, na, i, fb, look_ahead, nb, j):
         #Look ahead to see if this was really the best match

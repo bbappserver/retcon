@@ -1,9 +1,46 @@
 from django.test import TestCase as djTest
-from unittest import TestCase
+from rest_framework.test import DjangoClient
+from retcon.test.CRUDTest import APICRUDTest
+from unittest import TestCase,skip
 from retconstorage.imagedif import ImageSequenceComparer,ImageSequenceSource,dhash
 from glob import glob
 import os.path
 # Create your tests here.
+class FileAPITest(APICRUDTest):
+
+    def testCreateManagedFile(self):
+
+        with self.subTest("With md5"):
+            d={'md5':'1234'}
+            self.client.post('/API/file_id.json',d)
+        with self.subTest("With sha256"):
+            d={'sha256':'1234'}
+            self.client.post('/API/file_id.json',d)
+        with self.subTest("With md5+sha256"):
+            d={'md5':'1234',
+            'sha256':'1234'
+            }
+            self.client.post('/API/file_id.json',d)
+        with self.subTest("With upload"):
+            blob='x'*(4<<20)
+            self.client.post('/API/file/upload',data=blob)
+            #compute hashes
+            #track file
+            #test contents and expected hash
+
+            #Now do it a gain with a file that exists
+            self.client.post('/API/file/upload',data=blob)
+            #compute hashes
+            #track file
+            #test contents and expected hash
+
+            #erase file
+            raise NotImplementedError()
+    
+    def testRetrieveManagedFile(self):
+        raise NotImplementedError()
+
+
 
 class ImageSequenceCompareTest(TestCase):
 
@@ -65,26 +102,35 @@ class ImageSequenceCompareTest(TestCase):
                 with self.subTest("repeat "+p):
                     self.assertTrue(len(list(seq.frames()))>5)
 
+    # @skip("This takes a while, only run if it isn't actually working")
     def testCompareVideoToSelf(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
         pb=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
         a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
         b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        overlap=ImageSequenceComparer(a,b).cmp()
+        i=0
+        for e in overlap:
+            i+=1
+            if i>1:
+                self.assertTrue(i==1,"There should be only one overlap interval for identical videos")
+        self.assertTrue(i==1,"There should be only one overlap interval for identical videos")
 
+    @skip("Only needed to prove that iterating two video sequences works, but its long so skip it if this is working.")
+    def testDirectCompareVideoToSelf(self):
+        pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
+        pb=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
+        a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+        b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
         import numpy as np
         fla=list(a.frames())
         flb=list(b.frames())
         for i in range(a.frame_count):
             fa=fla[i].as_array()
             fb=flb[i].as_array()
-            self.assertTrue(np.array_equal(fa,fb))
-        
-        a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
-        b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
+            self.assertFalse(fa is fb,"Two image sequences must not return the same underlying object per frame")
+            self.assertTrue(np.array_equal(fa,fb),"Frames should always match for identical video streams")
 
-        
-        overlap=ImageSequenceComparer(a,b).cmp()
-        self.assertTrue(len(overlap)==1)
     def testCompareVideoToShrink(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
         pb=os.path.join(self.basedir, 'test/bigbuckclippedshrink.mp4')
@@ -92,7 +138,10 @@ class ImageSequenceCompareTest(TestCase):
         b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
         
         overlap=ImageSequenceComparer(a,b).cmp()
-        self.assertTrue(len(overlap)>0)
+        for e in overlap:
+            self.assertTrue(e is not None,"Expected overlap but there was none.")
+            break
+
 
 
     def testCompareVideoToShrinkClipped(self):
@@ -102,7 +151,9 @@ class ImageSequenceCompareTest(TestCase):
         b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
         
         overlap=ImageSequenceComparer(a,b).cmp()
-        self.assertTrue(len(overlap)>0)
+        for e in overlap:
+            self.assertTrue(e is not None,"Expected overlap but there was none.")
+            break
 
     def testCompareVideoShrinkToShrinkClipped(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclippedshrink.mp4')
@@ -111,15 +162,18 @@ class ImageSequenceCompareTest(TestCase):
         b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
 
         overlap=ImageSequenceComparer(a,b).cmp()
-        self.assertTrue(len(overlap)>0)
+        for e in overlap:
+            self.assertTrue(e is not None,"Expected overlap but there was none.")
+            break
     def testCompareVideoToAnimatedGif(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
         pb=os.path.join(self.basedir, 'test/bigbuckclippedshrinkcut.gif')
         a= ImageSequenceSource(pa,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
         b= ImageSequenceSource(pb,ImageSequenceSource.SEQUENCE_TYPE_GIF)
-
         overlap=ImageSequenceComparer(a,b).cmp()
-        self.assertTrue(len(overlap)>0)
+        for e in overlap:
+            self.assertTrue(e is not None,"Expected overlap but there was none.")
+            break
 
     def testCompareVideoToStill(self):
         raise NotImplementedError()
