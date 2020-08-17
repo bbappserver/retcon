@@ -14,6 +14,7 @@ class TagLabelSerializer(serializers.ModelSerializer):
     )
     #label= StringsField()
     definitions = serializers.SerializerMethodField()
+    expand_implied = serializers.SerializerMethodField()
     
     def get_definitions(self,obj):
         l= Tag.objects.filter(labels=obj) | Tag.objects.filter(canonical_label=obj)

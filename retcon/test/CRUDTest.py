@@ -1,5 +1,6 @@
-from rest_framework.test import APIRequestFactory,force_authenticate
+from rest_framework.test import APIRequestFactory,force_authenticate,APITestCase
 from django.contrib.auth.models import User
+
 class CRUDTest:
     
     def setUp(self):
@@ -7,7 +8,11 @@ class CRUDTest:
         self.superUser.save()
         self.factory = APIRequestFactory()
 
-    
+class APICRUDTest(APITestCase):
+    def setUp(self):
+        self.superUser = User.objects.create_user('root', 'root@retcon.com', 'x',is_superuser=True)
+        self.superUser.save()
+        self.factory = APIRequestFactory()
     # def testCreate(self):
     #     raise NotImplementedError()
     #     factory = APIRequestFactory()
