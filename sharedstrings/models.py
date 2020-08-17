@@ -61,8 +61,8 @@ class SharedStringTextInput(forms.TextInput):
         super().__init__(*args, **kwargs)
 
     class Media:
-        js = ('jquery-1.12.4.js',
-              'jquery-ui.min.js',
+        js = (
+              'jquery-ui.js',
               'sharedstringfield.js')
         css = {
             'all': ('sharedstringfield.css', 'jquery-ui.css')
@@ -111,6 +111,7 @@ class SharedStringFormField(forms.CharField):
             if len(value)==0:
                 return None
         return value
+    
 
 
 class SharedStringField(models.ForeignKey):
