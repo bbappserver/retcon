@@ -10,7 +10,7 @@ from semantictags import models as semantictags
 class Genre(models.Model):
     name = sharedstrings.SharedStringField()
     decription= models.CharField(max_length=128)
-    parent = models.ForeignKey("self",null=True,blank=True,on_delete=models.DO_NOTHING)
+    parent = models.ForeignKey("self",null=True,blank=True,on_delete=models.PROTECT)
     def __str__(self):
         return '{}'.format(self.name)
     class Meta:
@@ -19,11 +19,11 @@ class Genre(models.Model):
 class Company(semantictags.Taggable):
     id = models.AutoField(primary_key=True)
     name=sharedstrings.SharedStringField()
-    # name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.DO_NOTHING)
+    # name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.PROTECT)
     case_sensitive_name = models.BooleanField()
 
-    parent=models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,blank=True,related_name="children")
-    website = models.ForeignKey("retconpeople.Website",on_delete=models.DO_NOTHING,null=True,blank=True)
+    parent=models.ForeignKey("self",on_delete=models.PROTECT,null=True,blank=True,related_name="children")
+    website = models.ForeignKey("retconpeople.Website",on_delete=models.PROTECT,null=True,blank=True)
     defunct = models.BooleanField(null=True,blank=True)
     external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
 
@@ -152,6 +152,19 @@ class Series(CreativeWork):
         else:
             return "{}(Unknown Year)".format(self.preferred_name(),)
     
+    def save(self, *args, **kwargs):
+
+        #check for cycles
+        cur=self
+        while cur.parent_series_id is not None:
+            if cur.parent_series_id == self.id: #This is intentionally lazy so we don't have to join
+                raise django.db.IntegrityError("A series parent chain may not form a cycle.")
+            cur=cur.parent_series
+
+        #only reached on no cycle
+        super().save(*args, **kwargs)  # Call the "real" save() method.
+
+
     class Meta:
         verbose_name_plural = "series"
 
@@ -161,8 +174,8 @@ class RelatedSeries(models.Model):
         (1,'spinoff'),
         (2,'sequel')
     )
-    to_series=models.ForeignKey("Series",on_delete=models.DO_NOTHING)
-    from_series=models.ForeignKey("Series",related_name='based_off',on_delete=models.DO_NOTHING)
+    to_series=models.ForeignKey("Series",on_delete=models.PROTECT)
+    from_series=models.ForeignKey("Series",related_name='based_off',on_delete=models.PROTECT)
     relationship=models.PositiveSmallIntegerField(choices=RELATIONS,help_text='e.g. <to_work> is a sequel to <from_work>')    
 
 
@@ -223,7 +236,7 @@ class Comicbook(Book):
     pass
 
 class AudioBook(CreativeWork):
-    reading_of=models.ForeignKey("Book",on_delete=models.DO_NOTHING)
+    reading_of=models.ForeignKey("Book",on_delete=models.PROTECT)
 
 class MovieManager(models.Manager):
     def get_queryset(self):
