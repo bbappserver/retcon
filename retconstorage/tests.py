@@ -5,42 +5,6 @@ from unittest import TestCase,skip
 from retconstorage.imagedif import ImageSequenceComparer,ImageSequenceSource,dhash
 from glob import glob
 import os.path
-# Create your tests here.
-class FileAPITest(APICRUDTest):
-
-    def testCreateManagedFile(self):
-
-        with self.subTest("With md5"):
-            d={'md5':'1234'}
-            self.client.post('/API/file_id.json',d)
-        with self.subTest("With sha256"):
-            d={'sha256':'1234'}
-            self.client.post('/API/file_id.json',d)
-        with self.subTest("With md5+sha256"):
-            d={'md5':'1234',
-            'sha256':'1234'
-            }
-            self.client.post('/API/file_id.json',d)
-        with self.subTest("With upload"):
-            blob='x'*(4<<20)
-            self.client.post('/API/file/upload',data=blob)
-            #compute hashes
-            #track file
-            #test contents and expected hash
-
-            #Now do it a gain with a file that exists
-            self.client.post('/API/file/upload',data=blob)
-            #compute hashes
-            #track file
-            #test contents and expected hash
-
-            #erase file
-            raise NotImplementedError()
-    
-    def testRetrieveManagedFile(self):
-        raise NotImplementedError()
-
-
 
 class ImageSequenceCompareTest(TestCase):
 
@@ -102,7 +66,7 @@ class ImageSequenceCompareTest(TestCase):
                 with self.subTest("repeat "+p):
                     self.assertTrue(len(list(seq.frames()))>5)
 
-    # @skip("This takes a while, only run if it isn't actually working")
+    @skip("This takes a while, only run if it isn't actually working")
     def testCompareVideoToSelf(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
         pb=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
@@ -155,6 +119,7 @@ class ImageSequenceCompareTest(TestCase):
             self.assertTrue(e is not None,"Expected overlap but there was none.")
             break
 
+    @skip("Only run if broken, very time consuming")
     def testCompareVideoShrinkToShrinkClipped(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclippedshrink.mp4')
         pb=os.path.join(self.basedir, 'test/bigbuckclippedshrinkcut.mp4')
@@ -165,6 +130,8 @@ class ImageSequenceCompareTest(TestCase):
         for e in overlap:
             self.assertTrue(e is not None,"Expected overlap but there was none.")
             break
+    
+    @skip("Only run if broken, very time consuming")
     def testCompareVideoToAnimatedGif(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
         pb=os.path.join(self.basedir, 'test/bigbuckclippedshrinkcut.gif')
