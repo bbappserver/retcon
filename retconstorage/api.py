@@ -1,4 +1,4 @@
-from .models import NamedFile
+from .models import NamedFile,ManagedFile
 from rest_framework import serializers,viewsets,status,response
 from rest_framework.decorators import action,renderer_classes
 class NamedFileSerializer(serializers.ModelSerializer):
@@ -55,3 +55,22 @@ class NamedFileViewSet(viewsets.ModelViewSet):
     #         return Response(serializer.data,status=200)
     #     else:
     #         return Response(serializer.data,status=404)
+
+class ManagedFileSerializer(serializers.ModelSerializer):
+
+        class Meta:
+            model = ManagedFile
+            fields = ['id','md5','sha256']
+        
+class ManagedFileViewset(viewsets.ModelViewSet):
+        
+        @action(methods=['post'],detail=False)
+        def get_or_create(self,pk,request):
+            raise NotImplementedError()
+            out,created=ManagedFile.objects.get_or_create(**request.body)
+            ManagedFileSerializer(out)
+            if created:
+                return response.Response(out.data,status=status.HTTP_201_CREATED)
+            else:
+                return response.Response(out.data,status=status.HTTP_200_OK)
+            

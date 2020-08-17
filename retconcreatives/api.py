@@ -1,5 +1,7 @@
 from .models import Episode,Series,Company
 from retconpeople.models import Person
+from remotables.api import ContentResourceSerializer
+from remotables.models import ContentResource
 from sharedstrings.models import Strings
 from rest_framework import serializers,viewsets,status,response
 from rest_framework.decorators import action,renderer_classes
@@ -104,23 +106,42 @@ class SeriesSerializer(serializers.ModelSerializer):
     # id= serializers.IntegerField()
     # name = serializers.CharField()
 
-    published_by = serializers.HyperlinkedRelatedField(
+    published_by = serializers.HyperlinkedRelatedField(required=False,
         many=True,
     queryset=Company.objects.all(),
     view_name='company-detail',
     style={'base_template': 'input.html'})
 
-    created_by = serializers.HyperlinkedRelatedField(
+    created_by = serializers.HyperlinkedRelatedField(required=False,allow_null=True,
     queryset=Person.objects.all(),
     view_name='person-detail',
     style={'base_template': 'input.html'})
 
     files= serializers.SlugRelatedField(many=True,slug_field="sha256",read_only=True)
 
+    external_representation= ContentResourceSerializer(many=True,required=False)
+
+    def create(self, validated_data):
+        urls_data = validated_data.pop('external_representation') if 'external_representation' in validated_data else []
+        series = Series.objects.create(**validated_data)
+        for url_data in urls_data:
+            d=None
+            if isinstance(url_data,str):
+                d={'url':url_data}
+            else:
+                d=url_data
+                serializer = ContentResourceSerializer(data=d)
+                if serializer.is_valid():
+                    d= serializer.validated_data
+            res=ContentResource.objects.create(**d)
+            series.external_representation.add(res)
+        series.save()
+        return series
+
 
     class Meta:
         model = Series
-        fields = ['id','name','published_by','published_on','published_on_precision','created_by','files']
+        fields = ['id','name','published_by','published_on','published_on_precision','created_by','files','external_representation']
     
 
 class SeriesViewSet(viewsets.ModelViewSet):

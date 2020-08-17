@@ -1,4 +1,4 @@
-from django.db import models,transaction
+from django.db import models,transaction,IntegrityError
 from sharedstrings.models import Strings
 from .storage import HashStorage
 from .fields import HashFileField
@@ -119,6 +119,39 @@ class ManagedFile(models.Model):
     retain_count=models.IntegerField(default=0,help_text="Positive indicates desire to keep, negative to delete,0=inbox")
     filetype = models.ForeignKey("Filetype",on_delete=models.PROTECT,null=True,blank=True,related_name='+')
     
+    _write_once_fields=['md5','sha256','size']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for field in self._write_once_fields:
+            setattr(self, '__original_%s' % field, getattr(self, field))
+
+    def _field_was_changed(self,field):
+        orig = '__original_%s' % field
+        if getattr(self, orig) != getattr(self, field):
+            return True
+        return False
+    
+    def _field_was_none(self,field):
+        orig = '__original_%s' % field
+        if getattr(self, orig) != getattr(self, field):
+            return True
+        return False
+
+    def save(self, unsafe_modification=False, *args, **kwargs):
+        '''Raises Integrity error if a write once field is modified.  Use unsafe_modification=True to override.'''
+        is_update=self.pk is not None
+        if not unsafe_modification and is_update:
+            unsafe_fields=[]
+            for f in self._write_once_fields:
+                if self._field_has_changed(f) and not slef._field_was_none(f):
+                    unsafe_fields.append(f)
+            if unsafe_fields:
+                raise IntegrityError("The non-null fields {} cannot be modified.".format(unsafe_fields)) 
+        else:
+            super().save(*args, **kwargs)  # Call the "real" save() method.
+
     # def calculate_missing_hashes(self):
     def robust_abspath(self):
         '''Returns a tracked path or the first named file that exists'''

@@ -33,6 +33,7 @@ class ContentResource(Resource):
         if self.valid_until is None:
             return True
         else:
+            local = tz.gettz()
             now=datetime.datetime.now(tz=local)
             return now < self.valid_until
 
