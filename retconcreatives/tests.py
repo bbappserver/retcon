@@ -148,6 +148,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+        raise NotImplementedError("Need to check that everything is correct database side")
 
     def test_create_with_files(self):
         d=self.default_child()
@@ -157,6 +158,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+        raise NotImplementedError("Need to check that everything is correct database side")
 
     def test_create_with_publishers(self):
         d=self.default_child()
@@ -166,6 +168,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+        raise NotImplementedError("Need to check that everything is correct database side")
 
     def test_create_with_author(self):
         d=self.default_child()
@@ -175,6 +178,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+        raise NotImplementedError("Need to check that everything is correct database side")
 
     def test_create_with_producer(self):
         d=self.default_child()
@@ -184,9 +188,8 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+        raise NotImplementedError("Need to check that everything is correct database side")
 
-    # def test_create_with_related(self):
-    #     raise NotImplementedError()
     def test_create_with_all_attributes(self):
         d=self.default_child()
         response = self.create_with_all_attributes(d)
@@ -194,6 +197,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+        raise NotImplementedError("Need to check that everything is correct database side")
 
     def create_with_all_attributes(self, d):
         d['author']=[{'first_name':'megacorp'}]
