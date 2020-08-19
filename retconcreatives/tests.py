@@ -6,6 +6,7 @@ from rest_framework import status
 from retcon.test.CRUDTest import APICRUDTest
 from retconpeople.models import Person
 from .models import Series,Episode,Company
+from retconstorage.models import ManagedFile
 # Create your tests here.
 
 def create_series(d, parent):
@@ -135,60 +136,84 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
 
         
     def test_create_child(self):
-        response=self.client.post('/api/series/',self.default_child(),format='json')
+        d=self.default_child()
+        response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
+        self.assertDictContainsSubset(d,response.json())
     
     def test_create_with_urls(self):
         d=self.default_child()
-        d['external_representation']=[
-            {'url':'http://www.twitter.com/user/123'},
-            {'url':'http://www.twitter.com/user/124'}]
+        urls=['http://www.twitter.com/user/123','http://www.twitter.com/user/124']
+        d['external_representation']=[ {'url':u} for u in urls ]
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
         raise NotImplementedError("Need to check that everything is correct database side")
+        rd=response.json()
+        self.assertCoverFilteredDict(d,rd,['external_representation'])
+        for x in rd['external_representation']:
+            self.assertIn(x['url'],urls)
 
     def test_create_with_files(self):
         d=self.default_child()
-        d['files']=[{'sha256':'hsdghgfxncyj3'},]
+        files=[{'sha256':bytes.fromhex('abcdef')}]
+        file_ids=[x.id for x in self._create_files(files)]
+        d['files']=file_ids
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
         raise NotImplementedError("Need to check that everything is correct database side")
+        rd=response.json()
+        self.assertCoverFilteredDict(d,rd)
+        for x in rd['files']:
+            self.assertEqual(x['sha256'],'hsdghgfxncyj3')
 
     def test_create_with_publishers(self):
         d=self.default_child()
-        d['publishers']=[{'name':'megacorp'},{'name':'megacorp2'}]
+        publishers = [{'name':'megacorp','case_sensitive_name':False},{'name':'megacorp2','case_sensitive_name':False}]
+        d['published_by']= publishers
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
         raise NotImplementedError("Need to check that everything is correct database side")
+        rd=response.json()
+        self.assertCoverFilteredDict(d,rd,['id','published_by'])
+        for x in rd['published_by']:
+            self.assertIn(x['name'],['megacorp','megacorp2'])
 
     def test_create_with_author(self):
         d=self.default_child()
-        d['author']=[{'first_name':'megacorp'}]
+        d['created_by']={'first_name':'megacorp'}
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
         raise NotImplementedError("Need to check that everything is correct database side")
+        rd=response.json()
+        self.assertCoverFilteredDict(d,rd,ignored_keys='created_by')
+        self.assertCoverFilteredDict(d['created_by'],rd['created_by'])
 
     def test_create_with_producer(self):
         d=self.default_child()
-        d['producer']=[{'first_name':'megacorp'}]
+        producers = [{'name':'megacorp','case_sensitive_name':False},{'name':'megacorp2','case_sensitive_name':False}]
+        d['produced_by']=producers
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
         id=int(response.json()['id'])
         response=self.client.get('/api/series/{}/'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
         raise NotImplementedError("Need to check that everything is correct database side")
+        rd=response.json()
+        self.assertCoverFilteredDict(d,rd,['id','produced_by'])
+        for x in rd['produced_by']:
+            self.assertIn(x['name'],['megacorp','megacorp2'])
 
     def test_create_with_all_attributes(self):
         d=self.default_child()
@@ -220,4 +245,29 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
         response=self.client.get('/api/series/{}'.format(id),format='json')
         self.assertEqual(response.status_code,status.HTTP_404_NOT_FOUND,msg=response.content)
+
+    def _create_files(self,dicts):
+        for d in dicts:
+            o=ManagedFile(**d)
+            o.save()
+            yield o
+    
+    def _create_companies(self,dicts):
+        for d in dicts:
+            o=Company(**d)
+            o.clean()
+            o.save()
+            yield o
+    
+    def _create_urls(self,dicts):
+        for d in dicts:
+            o=ContentResource(**d)
+            o.save()
+            yield o
+    
+    def _create_people(self,dicts):
+        for d in dicts:
+            o=Person(**d)
+            o.save()
+            yield o
         
