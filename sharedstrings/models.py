@@ -1,6 +1,7 @@
 from django.db import models
 from django import forms
 from django.contrib.admin.widgets import AutocompleteMixin
+from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 # Create your models here.
 
 
@@ -113,8 +114,16 @@ class SharedStringFormField(forms.CharField):
         return value
     
 
+class ForwardSharedstringManyToOneDescriptor(ForwardManyToOneDescriptor):
+    '''Converts a string assigned to a sharedstring field into an object'''
+    def __set__(self, instance, value):
+        if isinstance(value,str):
+            value,created = Strings.objects.get_or_create(name=value)
+        return super().__set__(instance,value)
 
 class SharedStringField(models.ForeignKey):
+
+    forward_related_accessor_class = ForwardSharedstringManyToOneDescriptor
     def __init__(self, **kwargs):
         d = {'to': "sharedstrings.Strings",'related_name': "+",'on_delete': models.PROTECT}
         if 'blank' not in kwargs: d['blank'] = True 
