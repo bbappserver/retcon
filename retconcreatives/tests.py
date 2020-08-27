@@ -62,7 +62,18 @@ class SeriesEpisodeCRUDTestCase(TestCase):
     #     raise NotImplementedError()
     
     def test_destroy(self):
-        raise NotImplementedError()
+        d={
+            "name":"child",
+            "published_on":"2000-01-01",
+            "published_on_precision":"y",
+            "created_by":None,
+            "medium":Series.CARTOON
+        }
+        
+        parent=None
+        s=create_series(d, parent)
+        s.delete()
+        
     def test_fail_destroy_parent(self):
         with self.assertRaises(ProtectedError):
             d={
@@ -120,7 +131,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         d=self.default_child()
         response = self.create_with_all_attributes(d)
         id=int(response.json()['id'])
-        self.client.get('/api/series/{}'.format(id),format='json')
+        self.client.get('/api/series/{}/'.format(id),format='json')
 
         
     def test_create_child(self):
@@ -134,33 +145,55 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
             {'url':'http://www.twitter.com/user/124'}]
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
+        id=int(response.json()['id'])
+        response=self.client.get('/api/series/{}/'.format(id),format='json')
+        self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
 
     def test_create_with_files(self):
         d=self.default_child()
         d['files']=[{'sha256':'hsdghgfxncyj3'},]
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
+        id=int(response.json()['id'])
+        response=self.client.get('/api/series/{}/'.format(id),format='json')
+        self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+
     def test_create_with_publishers(self):
         d=self.default_child()
         d['publishers']=[{'name':'megacorp'},{'name':'megacorp2'}]
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
+        id=int(response.json()['id'])
+        response=self.client.get('/api/series/{}/'.format(id),format='json')
+        self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+
     def test_create_with_author(self):
         d=self.default_child()
         d['author']=[{'first_name':'megacorp'}]
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
+        id=int(response.json()['id'])
+        response=self.client.get('/api/series/{}/'.format(id),format='json')
+        self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+
     def test_create_with_producer(self):
         d=self.default_child()
         d['producer']=[{'first_name':'megacorp'}]
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
-    def test_create_with_related(self):
-        raise NotImplementedError()
+        id=int(response.json()['id'])
+        response=self.client.get('/api/series/{}/'.format(id),format='json')
+        self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+
+    # def test_create_with_related(self):
+    #     raise NotImplementedError()
     def test_create_with_all_attributes(self):
         d=self.default_child()
         response = self.create_with_all_attributes(d)
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
+        id=int(response.json()['id'])
+        response=self.client.get('/api/series/{}/'.format(id),format='json')
+        self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
 
     def create_with_all_attributes(self, d):
         d['author']=[{'first_name':'megacorp'}]
@@ -171,4 +204,16 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
             {'url':'http://www.twitter.com/user/124'}]
         response=self.client.post('/api/series/',d,format='json')
         return response
+    
+    def test_create_destroy_with_all_attributes(self):
+        d=self.default_child()
+        response = self.create_with_all_attributes(d)
+        self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
+        id=int(response.json()['id'])
+        response=self.client.get('/api/series/{}/'.format(id),format='json')
+        self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+        self.client.delete('/api/series/{}/'.format(id),format='json')
+        self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
+        response=self.client.get('/api/series/{}'.format(id),format='json')
+        self.assertEqual(response.status_code,status.HTTP_404_NOT_FOUND,msg=response.content)
         

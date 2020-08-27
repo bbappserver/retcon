@@ -19,7 +19,14 @@ from rest_framework import routers
 from rest_framework.authtoken import views
 import retconpeople.api,sharedstrings.api,semantictags.api,retconstorage.api,retconcreatives.api
 
-router = routers.DefaultRouter()
+
+class OptionalSlashRouter(routers.SimpleRouter):
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.trailing_slash = '/?'
+
+router = OptionalSlashRouter()
 router.register(r'people', retconpeople.api.PersonViewSet,basename='person')
 router.register(r'usernames', retconpeople.api.UsernameViewSet)
 router.register(r'usernumbers', retconpeople.api.UserNumberViewSet)
