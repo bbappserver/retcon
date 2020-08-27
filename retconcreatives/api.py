@@ -5,8 +5,12 @@ from remotables.api import ContentResourceSerializer
 from remotables.models import ContentResource
 from sharedstrings.models import Strings
 from sharedstrings.api import StringsField
+from retconstorage.models import ManagedFile
 from rest_framework import serializers,viewsets,status,response
 from rest_framework.decorators import action,renderer_classes
+from django.db import transaction
+from django.conf import Settings
+from retcon.api import RetconModelViewSet
 
 
 
@@ -108,70 +112,78 @@ class SeriesSerializer(serializers.ModelSerializer):
     # id= serializers.IntegerField()
     # name = serializers.CharField()
 
-    published_by = CompanySerializer(required=False,
-        many=True,
-    # queryset=Company.objects.all(),
+    published_by = serializers.PrimaryKeyRelatedField(required=False,
+        many=True, 
+        #view_name='company-detail',
+    queryset=Company.objects.all(),
     style={'base_template': 'input.html'})
 
-    created_by = PersonSerializer(required=False,allow_null=True,
-    # queryset=Person.objects.all(),
+    created_by = serializers.PrimaryKeyRelatedField(required=False,allow_null=True,
+    #view_name='person-detail',
+    queryset=Person.objects.all(),
     style={'base_template': 'input.html'})
 
-    produced_by = CompanySerializer(required=False,allow_null=False,many=True,
-    # queryset=Company.objects.all(),
+    produced_by = serializers.PrimaryKeyRelatedField(required=False,allow_null=False,many=True,
+    #view_name='company-detail',
+    queryset=Company.objects.all(),
     style={'base_template': 'input.html'})
 
-    files= serializers.SlugRelatedField(many=True,slug_field="sha256",read_only=True)
+    files= serializers.SlugRelatedField(many=True,slug_field="sha256",read_only=True,style={'base_template': 'input.html'})
 
     external_representation= ContentResourceSerializer(many=True,required=False)
 
     def create(self, validated_data):
         urls_data = validated_data.pop('external_representation') if 'external_representation' in validated_data  else []
-        produced_by = validated_data.pop('produced_by') if 'produced_by' in validated_data and validated_data['produced_by'] is not None else []
-        published_by = validated_data.pop('published_by') if 'published_by' in validated_data and validated_data['published_by'] is not None else []
-        created_by = validated_data.pop('created_by') if 'created_by' in validated_data else None
-        series = Series.objects.create(**validated_data)
-        for url_data in urls_data:
-            d=None
-            if isinstance(url_data,str): #TODO can't happen need custom field validation
-                d={'url':url_data}
-            else:
-                d=url_data
-                serializer = ContentResourceSerializer(data=d)
-                if serializer.is_valid():
-                    d= serializer.validated_data
+        files = validated_data.pop('files') if 'files' in validated_data and validated_data['files'] is not None else []
+
+        #TODO,WHAT WAS IS THINKING, CREATING ON THESE FIELDS IS A TERRIBLE IDEA, only do this with owned fields
+        # produced_by = validated_data.pop('produced_by') if 'produced_by' in validated_data and validated_data['produced_by'] is not None else []
+        # published_by = validated_data.pop('published_by') if 'published_by' in validated_data and validated_data['published_by'] is not None else []
+        # created_by = validated_data.pop('created_by') if 'created_by' in validated_data else None
+
+        with transaction.atomic():
+            series = Series.objects.create(**validated_data)
+            for x in urls_data:
+                d=None
+                if isinstance(x,str): #TODO can't happen need custom field validation
+                    d={'url':x}
                 else:
-                    raise ValueError(serializer.error_messages)
-            res=ContentResource.objects.create(**d)
-            series.external_representation.add(res)
-        for x in produced_by:
-            d=None
-            serializer = CompanySerializer(data=x)
-            if serializer.is_valid():
-                d= serializer.validated_data
-            else:
-                raise ValueError()
-            res=Company.objects.create(**d)
-            series.produced_by.add(res)
-            # series.produced_by.add(x)
-        for x in published_by:
-            d=None
-            serializer = CompanySerializer(data=x)
-            if serializer.is_valid():
-                d= serializer.validated_data
-            res=Company.objects.create(**d)
-            series.produced_by.add(res)
+                    d=x
+                    serializer = ContentResourceSerializer(data=d)
+                    if serializer.is_valid():
+                        d= serializer.validated_data
+                    else:
+                        raise ValueError(serializer.error_messages)
+                res,created=ContentResource.objects.get_or_create(**d)
+                series.external_representation.add(res)
+            try:
+                for x in files:
+                    b=bytes.fromhex(x)
+                    o=ManagedFile.objects.get(sha256=x)
+                    series.files.add(o)
+            except ManagedFile.DoesNotExist as e:
+                return response.Response({'status':'fail','message':'None existant file','data':x},status=status.HTTP_428_PRECONDITION_REQUIRED)
         
-        if created_by is None:
-            series.created_by=None
-        else:
-            serializer = PersonSerializer(data=created_by)
-            if serializer.is_valid():
-                d= serializer.validated_data
-            else:
-                raise ValueError(serializer.error_messages)
-            res=Person.objects.create(**d)
-            series.created_by=res
+        #TODO Phase these out
+        
+        # for x in published_by:
+        #     d=None
+        #     serializer = CompanySerializer(data=x)
+        #     if serializer.is_valid():
+        #         d= serializer.validated_data
+        #     res=Company.objects.create(**d)
+        #     series.produced_by.add(res)
+        
+        # if created_by is None:
+        #     series.created_by=None
+        # else:
+        #     serializer = PersonSerializer(data=created_by)
+        #     if serializer.is_valid():
+        #         d= serializer.validated_data
+        #     else:
+        #         raise ValueError(serializer.error_messages)
+        #     res=Person.objects.create(**d)
+        #     series.created_by=res
             #series.produced_by.add(x)
         # for x in created_by:
         #     serializer = PersonSerializer(data=x)
@@ -182,47 +194,37 @@ class SeriesSerializer(serializers.ModelSerializer):
         series.save()
         return series
 
-
     class Meta:
         model = Series
         exclude=[]
         #fields = ['id','name','published_by','published_on','published_on_precision','created_by','files','external_representation','parent_series','medium','produced_by']
     
 
-class SeriesViewSet(viewsets.ModelViewSet):
+class SeriesViewSet(RetconModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
     """
     queryset = Series.objects.all()
     serializer_class = SeriesSerializer
 
-    @action(detail=False, methods=['get','post'])
-    def add_producer(self, request, pk=None,format=None):
-        raise NotImplementedError()
-        # d=request.data
-        # urls = d['urls'] if 'urls' in d else []
-        # identifiers = d['identifiers'] if 'identifiers' in d else []
-        # l=Person.search_by_identifiers(urls=urls,user_identifiers=identifiers)
-        # serializer=PersonSerializer(l,many=True)
-        # if len(l)>0:
-            
-        #     return Response(serializer.data,status=200)
-        # else:
-        #     return Response(serializer.data,status=404)
-    def add_publisher(self, request, pk=None,format=None):
-        raise NotImplementedError()
-        # d=request.data
-        # urls = d['urls'] if 'urls' in d else []
-        # identifiers = d['identifiers'] if 'identifiers' in d else []
-        # l=Person.search_by_identifiers(urls=urls,user_identifiers=identifiers)
-        # serializer=PersonSerializer(l,many=True)
-        # if len(l)>0:
-            
-        #     return Response(serializer.data,status=200)
-        # else:
-        #     return Response(serializer.data,status=404)
     
-    def remove_producer(self, request, pk=None,format=None):
-        raise NotImplementedError()
-    def remove_publisher(self, request, pk=None,format=None):
-        raise NotImplementedError()
+
+
+    @action(detail=True, methods=['get','post','delete'])
+    def producers(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='produced_by'
+        subordinate_field_serializer = CompanySerializer
+        subordinate_type = Company
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type)
+    
+
+    @action(detail=True, methods=['get','post','delete'])
+    def publishers(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='published_by'
+        subordinate_field_serializer = CompanySerializer
+        subordinate_type = Company
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type)
+
+    

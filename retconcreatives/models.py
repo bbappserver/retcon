@@ -20,7 +20,7 @@ class Company(semantictags.Taggable):
     id = models.AutoField(primary_key=True)
     name=sharedstrings.SharedStringField()
     # name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.PROTECT)
-    case_sensitive_name = models.BooleanField()
+    case_sensitive_name = models.BooleanField(null=False,blank=False,default=False)
 
     parent=models.ForeignKey("self",on_delete=models.PROTECT,null=True,blank=True,related_name="children")
     website = models.ForeignKey("retconpeople.Website",on_delete=models.PROTECT,null=True,blank=True)
