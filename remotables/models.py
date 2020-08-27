@@ -18,7 +18,7 @@ class Resource(models.Model):
         abstract=True
     
     def __str__(self):
-        return "{} {}".format(self.unescaped_url,self.added_at)
+        return "{} {}".format(self.url,self.added_at)
 
 class ContentResource(Resource):
     '''URLs which serve content often intended to remain the same for long periods of time or indefinitely'''
