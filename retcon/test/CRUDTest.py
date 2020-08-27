@@ -1,6 +1,6 @@
 from rest_framework.test import APIRequestFactory,force_authenticate,APITestCase
 from django.contrib.auth.models import User
-
+import json
 class CRUDTest:
     
     def setUp(self):
@@ -13,6 +13,36 @@ class APICRUDTest(APITestCase):
         self.superUser = User.objects.create_user('root', 'root@retcon.com', 'x',is_superuser=True)
         self.superUser.save()
         self.factory = APIRequestFactory()
+    
+    def assertEqualFilteredDict(self,a,b,ignored_keys=None,message=''):
+        if ignored_keys is None: ignored_keys=set()
+        aks=set(a.keys())
+        bks=set(b.keys())
+        ignored_keys=set(ignored_keys)
+        aks-=ignored_keys
+        bks-=ignored_keys
+
+        self.assertEqual(aks,bks, message+"Dictionary keysets do not match")
+
+        for k in aks:
+            self.assertEqual(a[k],b[k],'a[{}] != b[{}]'.format(k,k))
+    
+    def assertCoverFilteredDict(self,subset,cover,ignored_keys=None,message=''):
+        if ignored_keys is None: ignored_keys=set()
+        aks=set(subset.keys())
+        bks=set(cover.keys())
+        ignored_keys=set(ignored_keys)
+        aks-=ignored_keys
+        bks-=ignored_keys
+
+        self.assertLessEqual(aks,bks, message+"Covers keys do not cover subset")
+
+        for k in aks:
+            self.assertEqual(subset[k],cover[k],'a[{}] != b[{}]'.format(k,k))
+    
+    
+
+        
     # def testCreate(self):
     #     raise NotImplementedError()
     #     factory = APIRequestFactory()
