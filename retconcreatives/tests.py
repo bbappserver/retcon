@@ -7,6 +7,7 @@ from retcon.test.CRUDTest import APICRUDTest
 from retconpeople.models import Person
 from .models import Series,Episode,Company
 from retconstorage.models import ManagedFile
+from remotables.models import ContentResource
 # Create your tests here.
 
 def create_series(d, parent):

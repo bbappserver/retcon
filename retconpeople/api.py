@@ -98,7 +98,7 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
     user_numbers=LeafUserNumberSerializer(many=True,required=False)
 
     tags = TagSerializer(many=True,required=False)
-    distinguish_from=serializers.HyperlinkedRelatedField(many=True,view_name='person-detail',queryset=Person.objects.all())
+    distinguish_from=serializers.HyperlinkedRelatedField(many=True,required=False,view_name='person-detail',queryset=Person.objects.all())
 
     class Meta:
         model = Person

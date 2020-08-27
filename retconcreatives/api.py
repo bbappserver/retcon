@@ -37,7 +37,7 @@ class CompanySerializer(serializers.HyperlinkedModelSerializer):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return response.Response(serializer.data)
     
 
 class CompanyViewSet(viewsets.ModelViewSet):
@@ -129,6 +129,7 @@ class SeriesSerializer(serializers.ModelSerializer):
         urls_data = validated_data.pop('external_representation') if 'external_representation' in validated_data  else []
         produced_by = validated_data.pop('produced_by') if 'produced_by' in validated_data and validated_data['produced_by'] is not None else []
         published_by = validated_data.pop('published_by') if 'published_by' in validated_data and validated_data['published_by'] is not None else []
+        created_by = validated_data.pop('created_by') if 'created_by' in validated_data else None
         series = Series.objects.create(**validated_data)
         for url_data in urls_data:
             d=None
@@ -160,6 +161,17 @@ class SeriesSerializer(serializers.ModelSerializer):
                 d= serializer.validated_data
             res=Company.objects.create(**d)
             series.produced_by.add(res)
+        
+        if created_by is None:
+            series.created_by=None
+        else:
+            serializer = PersonSerializer(data=created_by)
+            if serializer.is_valid():
+                d= serializer.validated_data
+            else:
+                raise ValueError(serializer.error_messages)
+            res=Person.objects.create(**d)
+            series.created_by=res
             #series.produced_by.add(x)
         # for x in created_by:
         #     serializer = PersonSerializer(data=x)
