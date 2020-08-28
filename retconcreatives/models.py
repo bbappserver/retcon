@@ -225,8 +225,21 @@ class Episode(CreativeWork):
     def __str__(self):
         return self.preferred_name()
 
-class Book(Episode):
+#TODO MIGRATE MEDIUMS TO SUBTYPES
+class Recording(Episode):
+    production_number=models.IntegerField(null=True,blank=True)
+
+class Writing(Episode):
     authors = models.ManyToManyField('retconpeople.Person')
+    class Meta:
+        abstract=True
+
+class Book(Writing):
+    pass
+
+class Software(Episode):
+    SFT_PLATFORM_HELP='Platforms this sofware runs on including consoles and operating systems'
+    platforms= models.ManyToManyField('self',blank=True,related_name='+',help_text=SFT_PLATFORM_HELP)
     pass
 
 class Illustration(CreativeWork):
@@ -253,12 +266,8 @@ class TVEpisode(Episode):
     class Meta:
         proxy=True
 
-class Software(Episode):
-    SFT_PLATFORM_HELP='Platforms this sofware runs on including consoles and operating systems'
-    platforms= models.ManyToManyField('self',blank=True,related_name='+',help_text=SFT_PLATFORM_HELP)
-    pass
 
-class WebVideo(Episode):
+class WebVideo(Recording):
     pass
 
 class Franchise(models.Model):
