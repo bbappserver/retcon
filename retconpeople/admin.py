@@ -10,7 +10,7 @@ def merge_people(modeladmin, request, queryset):
 merge_people.short_description = "Combine aliased people into the oldest one."
 
 class ExternalPersonContentInline(admin.TabularInline):
-    model=Person.external_representation.through
+    model=Person.external_representations.through
     extra=1
     verbose_name="External URL"
     verbose_name_plural="External URLs"
@@ -31,7 +31,7 @@ class UrlPatternInline(admin.TabularInline):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    exclude=("external_representation",)
+    exclude=("external_representations",)
     search_fields=['first_name','last_name','pseudonyms']
     list_display=["id","formatted_name","description","wanted_id_count"]
     list_filter=[]

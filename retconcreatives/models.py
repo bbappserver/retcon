@@ -25,7 +25,7 @@ class Company(semantictags.Taggable):
     parent=models.ForeignKey("self",on_delete=models.PROTECT,null=True,blank=True,related_name="children")
     website = models.ForeignKey("retconpeople.Website",on_delete=models.PROTECT,null=True,blank=True)
     defunct = models.BooleanField(null=True,blank=True)
-    external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
+    external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
 
     def __str__(self):
         return self.name.name
@@ -62,7 +62,7 @@ class CreativeWork(semantictags.Taggable):
     created_by = models.ForeignKey("retconpeople.Person",on_delete=models.PROTECT,null=True,blank=True,related_name="+")
     # representes_collections = models.ManyToManyField('retconstorage.Collection')
     # representes_remotables = models.ManyToManyField('retconremotables.RemoteEntity')
-    external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
+    external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
     files= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
 
     def local_name(self,language=django.utils.translation.get_language()):

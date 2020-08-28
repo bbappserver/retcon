@@ -111,7 +111,7 @@ class Person(models.Model):
 
     uuid=models.UUIDField(default=uuid.uuid4,blank=True,unique=True)
 
-    external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
+    external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
     canonicalize=False
 
     def get_usernames(self):

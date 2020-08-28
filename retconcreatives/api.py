@@ -130,10 +130,10 @@ class SeriesSerializer(serializers.ModelSerializer):
 
     files= serializers.SlugRelatedField(many=True,slug_field="sha256",read_only=True,style={'base_template': 'input.html'})
 
-    external_representation= ContentResourceSerializer(many=True,required=False)
+    external_representations= ContentResourceSerializer(many=True,required=False)
 
     def create(self, validated_data):
-        urls_data = validated_data.pop('external_representation') if 'external_representation' in validated_data  else []
+        urls_data = validated_data.pop('external_representations') if 'external_representations' in validated_data  else []
         files = validated_data.pop('files') if 'files' in validated_data and validated_data['files'] is not None else []
 
         #TODO,WHAT WAS IS THINKING, CREATING ON THESE FIELDS IS A TERRIBLE IDEA, only do this with owned fields
@@ -155,7 +155,7 @@ class SeriesSerializer(serializers.ModelSerializer):
                     else:
                         raise ValueError(serializer.error_messages)
                 res,created=ContentResource.objects.get_or_create(**d)
-                series.external_representation.add(res)
+                series.external_representations.add(res)
             try:
                 for x in files:
                     b=bytes.fromhex(x)
@@ -197,7 +197,7 @@ class SeriesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Series
         exclude=[]
-        #fields = ['id','name','published_by','published_on','published_on_precision','created_by','files','external_representation','parent_series','medium','produced_by']
+        #fields = ['id','name','published_by','published_on','published_on_precision','created_by','files','external_representations','parent_series','medium','produced_by']
     
 
 class SeriesViewSet(RetconModelViewSet):

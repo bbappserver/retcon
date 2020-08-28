@@ -3,7 +3,7 @@ from .models import Genre,Series,WebVideo,Movie,Episode,Company,RelatedSeries,Il
 from semantictags.admin import TaggableAdminMixin
 
 class ExternalContentInline(admin.TabularInline):
-    model=CreativeWork.external_representation.through
+    model=CreativeWork.external_representations.through
     extra=1
     verbose_name="External URL"
     verbose_name_plural="External URLs"
@@ -47,7 +47,7 @@ class SeriesAdmin(admin.ModelAdmin):
     search_fields=['name']
     autocomplete_fields=['tags','ambiguous_tags','produced_by','published_by','created_by','parent_series']
     #readonly_fields = ('related_from_series',)
-    exclude=["external_representation","files"]
+    exclude=["external_representations","files"]
     inlines=(RelatedSeriesInline,LocalizedTitleInline,ExternalContentInline,FilesInline)
 
 
@@ -55,13 +55,13 @@ class SeriesAdmin(admin.ModelAdmin):
 # @admin.register(Movie)
 # class MovieAdmin(TaggableAdminMixin):
 #     autocomplete_fields=['tags','ambiguous_tags','part_of','created_by','published_by']
-#     exclude=["external_representation",'medium','files']
+#     exclude=["external_representations",'medium','files']
 #     inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline)
 
 @admin.register(Episode)
 class EpisodeAdmin(TaggableAdminMixin):
     autocomplete_fields=['tags','ambiguous_tags','part_of','published_by','created_by']
-    exclude=["external_representation","files"]
+    exclude=["external_representations","files"]
     list_display=['preferred_name','name','published_on','publisher_names','part_of']
     list_editable=['part_of']
     search_fields=['name','localized_titles__name','published_by__name']
@@ -83,12 +83,12 @@ class CompanyAdmin(admin.ModelAdmin):
     list_filter=['defunct']
     #allowing sort by name actually sorts on shadredsting_id which is wrong, but the model's default ordering is correct
     sortable_by=['defunct','parent','website'] 
-    exclude=["external_representation"]
+    exclude=["external_representations"]
     pass
 
 @admin.register(Illustration)
 class IllustrationAdmin(admin.ModelAdmin):
         autocomplete_fields=['tags','ambiguous_tags','published_by','illustrators','created_by']
-        exclude=["external_representation","files"]
+        exclude=["external_representations","files"]
         inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline)
 
