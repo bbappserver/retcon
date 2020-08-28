@@ -257,8 +257,10 @@ class MovieManager(models.Manager):
             medium=Episode.MOVIE)
 
 class Movie(Episode):
-    medium=Episode.MOVIE
     objects=MovieManager()
+    def __init__(self,*args,**kwargs):
+        kwargs['medium']=Episode.MOVIE
+        super().__init__(*args,**kwargs)
     class Meta:
         proxy=True
 
