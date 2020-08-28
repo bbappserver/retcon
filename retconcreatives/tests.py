@@ -216,7 +216,10 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         s=Series.objects.get(id=id)
         self.assertEqual( s.produced_by.count(),0)
 
-        
+    def test_update_various_fields(self):
+        d={}#fields to update here
+        raise NotImplementedError()
+        self.put('/api/series/{}',data=d,format='json') 
 
     
     #TODO all wrong, creation should be with primary keys only for most subordinate resources.
