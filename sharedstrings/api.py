@@ -73,6 +73,8 @@ class StringsField(serializers.RelatedField):
 #        assert(isinstance(value.name,str))
         return str(value.name)
     def to_internal_value(self, data):
+        if data is None: return None
+        if isinstance(data,Strings):return data
         if isinstance(data,str):
             if hasattr(self,'queryset'):
                 qs= self.queryset
@@ -82,7 +84,7 @@ class StringsField(serializers.RelatedField):
             s, created = qs.get_or_create(name=data)
             return s
         else:
-            raise ValueError()
+            raise serializers.ValidationError('Attempted to assign unconvertible type to StringsField')
         
 
 

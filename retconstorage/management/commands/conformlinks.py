@@ -68,8 +68,8 @@ class SlowBar(progress.bar.Bar):
 
 def conform(target_file,dup_file):
 
-        target=target_file.name
-        newlink=dup_file.name
+        target=target_file.abspath
+        newlink=dup_file.abspath
 
         if os.path.exists(newlink):
             try:
@@ -140,6 +140,7 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
+        raise NotImplementedError("This isn't ready for use.")
 
         prefix = '/Volumes/'
         filter_root = ""
@@ -150,7 +151,7 @@ class Command(BaseCommand):
         '''
 
         inner = NamedFile.objects.group_by('identity_id').filter(
-            identity_id__count > 1).columns('identity_id')
+            identity_id__count__gt=1,identity.size__gt=0).columns('identity_id')
         outer = NamedFile.objects.filter(identity_id__in=list(
             inner)).filter(name__startswith=filter_root)
 

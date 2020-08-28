@@ -57,23 +57,26 @@ def collect_result(t):
     #we should definitely have gotten both hashes and if we didn't something went wrong
     if sha256 is None or md5 is None:
         return
+    try:
+        with transaction.atomic():
+            nf = NamedFile.objects.filter(name=name)[0]
 
-    with transaction.atomic():
-        nf = NamedFile.objects.filter(name=name)[0]
+            mf = None
+            mfs = ManagedFile.objects.filter(sha256=sha256)
+            if not mfs.exists():
+                #Create new identity
+                mf = ManagedFile(sha256=sha256, md5=md5)
+                #TODO supply prefix if this command ever accepts one other than the default
+                nf.size=nf.stat().st_size
+                mf.save()
+            else:
+                mf = mfs[0]
 
-        mf = None
-        mfs = ManagedFile.objects.filter(sha256=sha256)
-        if mfs.count() < 1:
-            #Create new identity
-            mf = ManagedFile(sha256=sha256, md5=md5)
-            #TODO supply prefix if this command ever accepts one other than the default
-            nf.size=nf.stat().st_size
-            mf.save()
-        else:
-            mf = mfs[0]
-
-        nf.identity = mf
-        nf.save()
+            nf.identity = mf
+            nf.save()
+    except FileNotFoundError:
+        #shouldn't happen but don't crash
+        pass
 
 
 class SlowBar(progress.bar.Bar):
@@ -156,9 +159,24 @@ class Command(BaseCommand):
             i = 0
             processed = 0
             print('Load names')
+            print(nfs.count())
             bar = SlowBar('Processing', max=nfs.count())
             for nf in nfs:
 
+                #If there is already a file with the same inode then they are the same
+                if nf.inode is not None:
+                    #check if there is a file with this inode and an already calculated identity
+                    onf=NamedFile.objects.filter(identity__isnull=False,inode=nf.inode)
+                    try:
+                        onf=onf[0]
+                        nf.identity=onf.identity
+                        nf.save()
+                        bar.next()
+                        processed+=1
+                        continue
+                    except:pass
+                
+                #Otherwise dispatch for hash calculation.
                 failed = True
                 while failed:
                     try:

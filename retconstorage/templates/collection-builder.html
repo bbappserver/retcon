@@ -1,0 +1,102 @@
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.0/angular.min.js"></script>
+{% verbatim %}
+<style>
+    tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    tr {
+        overflow-x: auto;
+    }
+</style>
+
+<body ng-app="myApp" ng-controller="myCtrl">
+
+    <div>
+        <table style="width:100%">
+            <thead>
+                <th width="49%">
+                    <input type="text" ng-model="searchText" style="width: 100%;">
+                </th>
+                <th width="2%"> </th>
+                <th width="49%">2</th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <ol>
+                            <li ng-repeat="x in searchResult" ng-click="handleListClick(x)">
+                                {{x.name}}
+                            </li>
+                        </ol>
+                    </td>
+                    <td>
+                        <button ng-click="addSelection()">&gt;</button>
+                    </td>
+                    <td>3</td>
+                </tr>
+            </tbody>
+        </table>
+        <div>
+            <button ng-click="save()">Save</button>
+        </div>
+    </div>
+
+
+    <script>
+        var app = angular.module("myApp", []);
+
+        app.controller("myCtrl", function ($scope, $http, $timeout) {
+            
+            $scope.searchResult = []
+
+            $scope.listState=
+            {
+                prevSelectionIndex=0,
+
+            }
+
+            $scope.handleListClick=function(x)
+            {
+                if ($scope.modifers["CtrlCmd"])
+                {
+                    //Toggle item
+                }
+                else if ($scope.modifiers["Shift"])
+                {
+                    //toggle span
+                }
+                else
+                {
+                    //replace selection
+                }
+            }
+
+            $scope.save = function () {
+
+            }
+
+            var filterTextTimeout = null;
+            $scope.$watch('searchText', function (val) {
+                if (filterTextTimeout) $timeout.cancel(filterTextTimeout);
+                filterTextTimeout = $timeout(function () {
+
+                    $http({
+                        method: 'GET',
+                        url: '/api/file/?icontains='+encodeURIComponent(val),
+                    }).then(function successCallback(response) {
+                        $scope.searchResult = response.data.results;
+                    }, function errorCallback(response) {
+                        // called asynchronously if an error occurs
+                        // or server returns response with an error status.
+                    });
+                }, 250); // delay 250 ms
+            })
+        });
+    </script>
+
+</body>
+{% endverbatim %}
+
+</html>

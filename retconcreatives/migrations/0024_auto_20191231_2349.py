@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
         migrations.DeleteModel(
             name='Actor',
         ),
-        migrations.RunPython(proxify_movies_and_tv),
+        # migrations.RunPython(proxify_movies_and_tv),
         migrations.DeleteModel(
             name='Movie',
         ),

@@ -17,9 +17,16 @@ from django.contrib import admin
 from django.urls import path,include
 from rest_framework import routers
 from rest_framework.authtoken import views
-import retconpeople.api,sharedstrings.api,semantictags.api
+import retconpeople.api,sharedstrings.api,semantictags.api,retconstorage.api,retconcreatives.api
 
-router = routers.DefaultRouter()
+
+class OptionalSlashRouter(routers.SimpleRouter):
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.trailing_slash = '/?'
+
+router = OptionalSlashRouter()
 router.register(r'people', retconpeople.api.PersonViewSet,basename='person')
 router.register(r'usernames', retconpeople.api.UsernameViewSet)
 router.register(r'usernumbers', retconpeople.api.UserNumberViewSet)
@@ -31,10 +38,19 @@ router.register(r'languages', sharedstrings.api.LanguageViewSet)
 router.register(r'tag', semantictags.api.TagViewSet)
 router.register(r'taglabel', semantictags.api.TagLabelViewSet)
 
+router.register(r'file', retconstorage.api.NamedFileViewSet,basename='namedfile')
+
+router.register(r'company', retconcreatives.api.CompanyViewSet)
+router.register(r'episode', retconcreatives.api.EpisodeViewSet,basename='episode')
+router.register(r'series', retconcreatives.api.SeriesViewSet,basename='series')
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api-token-auth/', views.obtain_auth_token),
-    path('admin/doc/', include('django.contrib.admindocs.urls'))
+    path('admin/doc/', include('django.contrib.admindocs.urls')),
+    path('creatives/', include('retconcreatives.urls')),
+    path('files/', include('retconstorage.urls'))
 ]

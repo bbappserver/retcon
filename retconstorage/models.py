@@ -1,9 +1,13 @@
-from django.db import models
+from django.db import models,transaction,IntegrityError
 from sharedstrings.models import Strings
 from .storage import HashStorage
 from .fields import HashFileField
 from retcon import settings
-import binascii,os.path
+import binascii,os.path,unicodedata
+import sys
+is_macos = sys.platform=='darwin'
+
+
 # Create your models here.
 class Filetype(models.Model):
     MIME = models.CharField(max_length=64)
@@ -27,15 +31,35 @@ class NamedFile(models.Model):
         return [f.name for f in self.model._meta.fields]
     
     def display_size(self):
-        if self.identity.size is None:
+        if self.identity is None or self.identity.size is None:
             return "?"
         return "{:.2f} MiB".format(self.identity.size/(1<<20))
     def display_MIME(self):
+        if self.identity is None or self.identity.filetype is None:
+            return "?"
         return self.identity.filetype.MIME
     
+    def multiplicity(self):
+        if self.identity is None:
+            return "?"
+        n=self.identity.names.count()
+        return n if n>0 else "? 1"
+    def deduped_multiplicity(self):
+        if self.identity is None:
+            return "?"
+        n= len(set((x.inode for x in self.identity.names.all())))
+        return n if n>0 else "? 1"
+
+    def alternate_names(self):
+        return [x.name for x in self.identity.names.all()]
+
     @property
     def abspath(self,prefix=settings.NAMED_FILE_PREFIX):
-        return os.path.join(prefix,self.name)
+        p= os.path.join(prefix,self.name)
+        if is_macos:
+            return unicodedata.normalize('NFC', p)
+        else:
+            return unicodedata.normalize('NFD', p)
     
     @property
     def exists(self):
@@ -43,10 +67,35 @@ class NamedFile(models.Model):
     
     def stat(self,prefix=settings.NAMED_FILE_PREFIX):
         return os.stat(self._abspath(prefix))
+    
+    def unlink(self):
+        return os.unlink(self.abspath)
 
     def _abspath(self,prefix=settings.NAMED_FILE_PREFIX):
         return os.path.join(prefix,self.name)
 
+
+    @classmethod
+    def prune_duplicates(cls):
+        '''Not feasible forlarge numbers of files'''
+        raise NotImplementedError()
+        l=cls.objects.all().order_by('name', 'id')
+        N=l.count()
+        i=0
+        j=i+1
+        # from progress.bar import Bar
+        # bar=Bar(max=N)
+        while i < N:
+            a=l[i]
+            with transaction.atomic():
+                j=i+1
+                b=l[j]
+                while a.name == b.name:
+                    b.delete()
+                    j+=1
+                    # bar.next()
+            i=j
+            
 
     class Meta:
         unique_together=(
@@ -70,6 +119,39 @@ class ManagedFile(models.Model):
     retain_count=models.IntegerField(default=0,help_text="Positive indicates desire to keep, negative to delete,0=inbox")
     filetype = models.ForeignKey("Filetype",on_delete=models.PROTECT,null=True,blank=True,related_name='+')
     
+    _write_once_fields=['md5','sha256','size']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for field in self._write_once_fields:
+            setattr(self, '__original_%s' % field, getattr(self, field))
+
+    def _field_was_changed(self,field):
+        orig = '__original_%s' % field
+        if getattr(self, orig) != getattr(self, field):
+            return True
+        return False
+    
+    def _field_was_none(self,field):
+        orig = '__original_%s' % field
+        if getattr(self, orig) != getattr(self, field):
+            return True
+        return False
+
+    def save(self, unsafe_modification=False, *args, **kwargs):
+        '''Raises Integrity error if a write once field is modified.  Use unsafe_modification=True to override.'''
+        is_update=self.pk is not None
+        if not unsafe_modification and is_update:
+            unsafe_fields=[]
+            for f in self._write_once_fields:
+                if self._field_has_changed(f) and not slef._field_was_none(f):
+                    unsafe_fields.append(f)
+            if unsafe_fields:
+                raise IntegrityError("The non-null fields {} cannot be modified.".format(unsafe_fields)) 
+        else:
+            super().save(*args, **kwargs)  # Call the "real" save() method.
+
     # def calculate_missing_hashes(self):
     def robust_abspath(self):
         '''Returns a tracked path or the first named file that exists'''
@@ -121,17 +203,30 @@ class ManagedFile(models.Model):
             os.link(self.robust_abspath(),self.abspath)
         self.storage_status=STORAGE_STATUS_HAVE 
 
-    def delete(self):
+    def unlink(self):
         if self.exists:
             os.unlink(self.abspath)
         self.status=self.STORAGE_STATUS_DELETED
         self.save()
     
     def purge(self):
-        for f in self.names:
-            os.unlink(f)
-        self.delete()
+        for f in self.names.all():
+            try:
+                f.unlink()
+            except FileNotFoundError:
+                pass
+        self.unlink()
     
+    def retain(self):
+        self.retain_count+=1
+        self.save()
+    
+    def release(self):
+        se;f.retain_count-=1
+        self.save()
+
+    def strnames(self):
+        return [x.name for x in self.names.all()]
     
     def __str__(self):
         # try:
@@ -150,7 +245,6 @@ class ManagedFile(models.Model):
         indexes = [models.Index(fields=['filetype'])]
     
 
-
 class Collection(models.Model):
     contents= models.ManyToManyField("ManagedFile",blank=True)
     parents = models.ManyToManyField("self",blank=True,related_name="children")
@@ -159,7 +253,6 @@ class OrderedCollectionMembers(models.Model):
     managed_file= models.ForeignKey("ManagedFile",on_delete=models.CASCADE,related_name='+')
     collection= models.ForeignKey("Collection",on_delete=models.CASCADE,related_name="ordered_members")
     ordinal= models.PositiveSmallIntegerField()
-
 
 class CollectionMetadata(models.Model):
     '''Optional minimal metadata for this collection'''
@@ -184,6 +277,50 @@ class CollectionMetadata(models.Model):
 #     a=models.ForeignKey('ManagedFile')
 #     b=models.ForeignKey('ManagedFile')
 #     type=models.CharField(max_length=1,choices=MATCH_TYPE_CHOICES)
+
+    @classmethod
+    def run_autocorrelation(cls,tolerance=2):
+        # grab all the hashes into a list (this takes a trivial maount of memory even for several million)
+        l=list(Dhash.objects.all())
+        N=l.count()
+
+        #Broadphase
+        for i in range(N):
+            for j in range(i+1):
+                x=l[i].dhash
+                y=l[j].dhash
+                z=x&y #bitwise and produces ony thos bits which are overlapped
+                distance=count_bits(z)
+                if distance < tolerance:
+                    pass
+                    #candidate for narrow phase
+        
+        #narrow phase
+        #reduce so we only have to load any particular item for correlaiton once
+        raise NotImplementedError()
+        #CASE image match image
+        #CASE image match video/animation
+        #CASE video/animation match video/animation
+
+        
+        #Before saving always ensure the lower id is a and the higher is b
+        if x.id<y.id:
+            PerceptualMatch(a=x,b=y,type=match_type).save()
+        else:
+            PerceptualMatch(a=x,b=y,type=match_type).save()
+    
+    @classmethod
+    def count_bits(cls,n):
+        '''
+        Integer sorcery counts bits efficiently in a 64 bit number
+        https://stackoverflow.com/questions/9829578/fast-way-of-counting-non-zero-bits-in-positive-integer'''
+        n = (n & 0x5555555555555555) + ((n & 0xAAAAAAAAAAAAAAAA) >> 1)
+        n = (n & 0x3333333333333333) + ((n & 0xCCCCCCCCCCCCCCCC) >> 2)
+        n = (n & 0x0F0F0F0F0F0F0F0F) + ((n & 0xF0F0F0F0F0F0F0F0) >> 4)
+        n = (n & 0x00FF00FF00FF00FF) + ((n & 0xFF00FF00FF00FF00) >> 8)
+        n = (n & 0x0000FFFF0000FFFF) + ((n & 0xFFFF0000FFFF0000) >> 16)
+        n = (n & 0x00000000FFFFFFFF) + ((n & 0xFFFFFFFF00000000) >> 32) # This last & isn't strictly necessary.
+        return n
 # class PerceptualHash(Models.model):
 #     class Meta:
 #         abstract=True
@@ -194,5 +331,5 @@ class CollectionMetadata(models.Model):
 # class DHash(Models.model):
 #     '''Perceptual hashes for broad phase perceptual matching
 #     Actual file contents should be evaluated to calculate perceptual match'''
-#     managed_file= models.ForeignKey("ManagedFile",on_delete=models.CASCADE,related_name='+')
-# #    hash= 
+#     value=BigIntegerField()
+#     managed_files= models.ManyToManyField("ManagedFile",related_name='dhashes')

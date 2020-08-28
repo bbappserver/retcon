@@ -10,8 +10,8 @@ class Command(BaseCommand):
     help = 'Scan files at the specified path and add them as path relative to prefix'
 
     def add_arguments(self, parser):
-        parser.add_argument('root', nargs=1, type=str)
         parser.add_argument('prefix', nargs=1, type=str)
+        parser.add_argument('root', nargs=1, type=str)
 
     def handle(self, *args, **options):
 
@@ -31,8 +31,9 @@ class Command(BaseCommand):
             aroot = os.path.abspath(root)
             eroot = aroot.replace(prefix, "")
             with transaction.atomic():
+                spin.next()
                 for file in files:
-                    spin.next()
+                    
                     if file[0] == '.':  # skip hidden
                         continue
 
@@ -42,8 +43,14 @@ class Command(BaseCommand):
                     # Intentionally using filter since get raises exception
                     # and shouldn't do exceptions in atomic
                     if(not f.exists()):
-                        path = os.path.join(root, file)
-                        ino = os.lstat(path)[stat.ST_INO]
-                        nf = NamedFile(name=epath, inode=ino)
-                        nf.save()
+                        try:
+                            path = os.path.join(root, file)
+                            if sys.platform=='darwin':
+                                path=unicodedata.normalize('NFC', path)
+                            ino = os.lstat(path)[stat.ST_INO]
+                            nf = NamedFile(name=epath, inode=ino)
+                            nf.save()
+                        except:
+                            nf = NamedFile(name=epath)
+                            nf.save()
         spin.finish()

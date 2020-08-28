@@ -1,5 +1,5 @@
 import requests,json
-from common import *
+from .common import *
 # data={
 # 'first_name':"Billy",
 #  'last_name':"Harrington",
@@ -66,15 +66,15 @@ class Retcon:
 
 # print("test")
 
-# if __name__=="main":
-# c=Retcon()
-c.login('root','testpass')
-data=[
-    # {'website':'twitter.com','name':'fakeuser1'},
-    # {'website':'twitter.com','name':'fakeuser2'},
-    {'website':'twitter.com','number':100},
-]
-c.post("http://127.0.0.1:8000/api/people/2/users/",json=data)
+if __name__=="main":
+    c=Retcon()
+    c.login('root','testpass')
+    data=[
+        # {'website':'twitter.com','name':'fakeuser1'},
+        # {'website':'twitter.com','name':'fakeuser2'},
+        {'website':'twitter.com','number':100},
+    ]
+    c.post("http://127.0.0.1:8000/api/people/2/users/",json=data)
 # #    s=c.SharedString(id=1).get_or_create()
 # # s.name="com"
 # # s.save()

@@ -1,6 +1,7 @@
 from django.db import models
 from django import forms
 from django.contrib.admin.widgets import AutocompleteMixin
+from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 # Create your models here.
 
 
@@ -61,8 +62,8 @@ class SharedStringTextInput(forms.TextInput):
         super().__init__(*args, **kwargs)
 
     class Media:
-        js = ('jquery-1.12.4.js',
-              'jquery-ui.min.js',
+        js = (
+              'jquery-ui.js',
               'sharedstringfield.js')
         css = {
             'all': ('sharedstringfield.css', 'jquery-ui.css')
@@ -111,9 +112,18 @@ class SharedStringFormField(forms.CharField):
             if len(value)==0:
                 return None
         return value
+    
 
+class ForwardSharedstringManyToOneDescriptor(ForwardManyToOneDescriptor):
+    '''Converts a string assigned to a sharedstring field into an object'''
+    def __set__(self, instance, value):
+        if isinstance(value,str):
+            value,created = Strings.objects.get_or_create(name=value)
+        return super().__set__(instance,value)
 
 class SharedStringField(models.ForeignKey):
+
+    forward_related_accessor_class = ForwardSharedstringManyToOneDescriptor
     def __init__(self, **kwargs):
         d = {'to': "sharedstrings.Strings",'related_name': "+",'on_delete': models.PROTECT}
         if 'blank' not in kwargs: d['blank'] = True 
@@ -132,20 +142,33 @@ class SharedStringField(models.ForeignKey):
 
     def to_python(self, value):
         
+        if value is None:
+            return super().to_python(None)
         if isinstance(value,int):
             return super().to_python(value)
 
-        if value is None or len(value) == 0:
-            return None
+        
         if isinstance(value, str):
+            if len(value)==0:
+                return super().to_python(None)
             value, created = Strings.objects.get_or_create(name=value)
         return super().to_python(value)
+
+    def get_prep_value(self, value):
+
+        if isinstance(value, str):
+            value, created = Strings.objects.get_or_create(name=value)
+            return super().get_prep_value(value)
+        return super().get_prep_value(value)
+
     
     def get_lookup(self, lookup_name):
         if lookup_name == 'icontains':
             return SurrogateIContainsStringLookup
         if lookup_name == 'contains':
             return SurrogateContainsStringLookup
+        if lookup_name == 'exact':
+            return SurrogateExactStringLookup
         
         else:
             return super().get_lookup(lookup_name)
@@ -169,3 +192,12 @@ class SurrogateContainsStringLookup(models.lookups.In):
         return super().__init__(lhs,rhs,*kwargs)
 
     lookup_name = 'contains'
+
+class SurrogateExactStringLookup(models.lookups.In):
+    
+    def __init__(self,lhs,rhs, *kwargs):
+        self.params=[]
+        rhs= [x.id for x in Strings.objects.filter(name=rhs).distinct()]
+        return super().__init__(lhs,rhs,*kwargs)
+
+    lookup_name = 'exact'

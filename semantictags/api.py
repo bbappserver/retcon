@@ -14,6 +14,7 @@ class TagLabelSerializer(serializers.ModelSerializer):
     )
     #label= StringsField()
     definitions = serializers.SerializerMethodField()
+    expand_implied = serializers.SerializerMethodField()
     
     def get_definitions(self,obj):
         l= Tag.objects.filter(labels=obj) | Tag.objects.filter(canonical_label=obj)
@@ -127,7 +128,7 @@ class TagViewSet(viewsets.ModelViewSet):
         try:
             lang= request.PATCH['locale'] if 'locale' in request.PATCH else request.LANGUAGE_CODE
 
-            with atomic:
+            with atomic():
                 tag= self.get_object()
                 s=Strings.objects.get_or_create(name=request.PATCH.name)
                 s.save()

@@ -3,3 +3,4 @@
 *.pyc
 private-settings.json
 .vagrant
+retconstorage/test/*

@@ -1,0 +1,207 @@
+<!doctype html>
+<html ng-app="phonecatApp">
+
+<head>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"
+        integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular.min.js"
+        integrity="sha512-jiG+LwJB0bmXdn4byKzWH6whPpnLy1pnGA/p3VCXFLk4IJ/Ftfcb22katPTapt35Q6kwrlnRheK6UPOIdJhYTA=="
+        crossorigin="anonymous">
+        </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+        integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap-theme.min.css"
+        integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"
+        integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
+        crossorigin="anonymous"></script>
+
+    <script>
+        // Define the `phonecatApp` module
+        var phonecatApp = angular.module('phonecatApp', []);
+
+        // Define the `PhoneListController` controller on the `phonecatApp` module
+        phonecatApp.controller('PhoneListController', function PhoneListController($scope, $http) {
+
+            $scope.mainTableContents = [];
+            $scope.searchResults = [];
+
+            $scope.seriesSearch = function () {
+                var searchTerm = encodeURIComponent($scope.pathFilter);
+                const URL = 'http://localhost:8000/api/series/search?icontains=' + searchTerm;
+                $http.get(URL).success(function (response) {
+                    //todo paaginate for the real deal
+                    $scope.seriesSearchResults = response.data.results;
+                });
+            };
+
+            $scope.seriesCreate = function () {
+                var entity = { "name": $scope.pathFilter }
+                const URL = 'http://localhost:8000/api/series/';
+                $http.post(URL, entity).then(function (response) {
+                    //todo paaginate for the real deal
+                    $scope.selectedSeries = response.data.results;
+                });
+            }
+
+
+            $scope.pageinateAjaxResults = function (outArray, url, on_load_page = null, on_complete = null) {
+                $http.get(url).then(function (response) {
+                    //todo paaginate for the real deal
+                    var j = response.data;
+                    j.results.forEach((x, i) => { outArray.push(x); });
+                    if (on_load_page) { on_load_page(); }
+
+                    if ($scope.cancelAsyncState) {
+                        return;
+                    }
+
+                    if (j['next']) {
+                        $scope.pageinateAjaxResults(outArray, j['next'], on_load_page = on_load_page, on_complete = on_complete);
+                    }
+                    else {
+                        if (on_complete) { on_complete(); $scope.cancelAsyncState=true; }
+                    }
+                });
+            }
+            $scope.cancelAsyncState=true;
+            $scope.cancelAsync= function(){$scope.cancelAsyncState=true;};
+            $scope.performSearch = function () {
+                var searchTerm = encodeURIComponent($scope.pathFilter);
+                
+                const URL = 'http://localhost:8000/api/file/?istartswith=' + searchTerm;
+                $http.get(URL).then(function (response) {
+                    var j = response.data;
+                    var proceed = true;
+                    if (j.count > 500) {
+                        proceed = confirm("Search will return " + j.count + " elements.  Proceed?");
+                    }
+                    if (proceed) {
+                        $scope.searchResults=[];
+                        $scope.cancelAsyncState=false;
+                        $scope.pageinateAjaxResults($scope.searchResults, URL, on_complete = $scope.parseFilenames);
+                    };
+                });
+            };
+    
+
+            $scope.analyzeSeries = function () {
+                //scan for holes
+            }
+
+            $scope.parseFilenames = function () {
+                const re = new RegExp($scope.pathregex);
+                let l = [];
+                for (var i = 0; i < $scope.searchResults.length; i++) {
+                    var record = $scope.searchResults[i];
+                    var parsed = re.exec(record.name);
+                    var tablerec = {}
+                    try {
+                        var tablerec = {
+                            id: record.id,
+                            sha256: record.sha256,
+                            name: record.name,
+                            title: parsed.groups.title,
+                            datePublished: parsed.groups.year + "-" + parsed.groups.month + "-" + parsed.groups.day,
+                            ordinal: parsed.groups.order_in_series
+
+                        };
+                    } catch (error) {
+                        var tablerec = {
+                            name: record.name
+                        };
+
+                    }
+
+                    l.push(tablerec);
+                }
+                $scope.mainTableContents = l;
+            }
+
+            $scope.createSeriesElementsFromRegexResults = function () {
+
+            }
+
+            $scope.seriesNamedFileContentCache = [];
+
+        });
+    </script>
+</head>
+
+{% verbatim %}
+
+<body ng-controller="PhoneListController">
+    <div class="container">
+        <div>
+            Step 1
+            <div>
+                Series Name:<input ng-model="seriesName"><br>
+                <button type="button" class="btn btn-primary" ng-click="seriesSearch()">Search</button>
+                <button type="button" class="btn btn-primary" ng-click="seriesCreate()">Create</button>
+            </div>
+            <div>
+                <input ng-model="pathFilter">
+                <button type="button" class="btn btn-primary" ng-click="performSearch()">Search</button>
+                <button type="button" class="btn btn-critical" ng-click="cancelAsync()" ng-if="!cancelAsyncState">Stop</button>
+            </div>
+            <div>
+                Regex<input ng-model="pathregex" ng-change="parseFilenames()">
+            </div>
+            <div>
+                Default date precision:
+                <select ng-model="defaultDatePrecision">
+                    <option value="year">Year</option>
+                    <option value="month">Year and Month</option>
+                    <option value="day">Exact Day</option>
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>path</th>
+                        <th>title</th>
+                        <th>date published</th>
+                        <th>date precision</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="x in mainTableContents">
+                        <td>{{x.ordinal}}</td>
+                        <td>{{x.name}}</td>
+                        <td>{{x.title}}</td>
+                        <td>{{x.datePublished}}</td>
+                        <td>
+                            <select ng-model="x.datePrecision">
+                                <option value="">Use Default</option>
+                                <option value="year">Year</option>
+                                <option value="month">Year and Month</option>
+                                <option value="day">Exact Day</option>
+
+                            </select>
+
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+
+        <button type="button" class="btn btn-primary">Save</button>
+
+    </div>
+</body>
+{% endverbatim %}
+
+</html>

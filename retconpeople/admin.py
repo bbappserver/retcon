@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.db.models import Q
-from .models import UserName,UserNumber,Person,Website
+from .models import UserName,UserNumber,Person,Website,UrlPattern
 # Register your models here.
 
 def merge_people(modeladmin, request, queryset):
@@ -25,11 +25,17 @@ class UserNumberInline(admin.TabularInline):
     model = UserNumber
     autocomplete_fields=["website"]
 
+class UrlPatternInline(admin.TabularInline):
+    model = UrlPattern
+
+
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
     exclude=("external_representation",)
     search_fields=['first_name','last_name','pseudonyms']
-    autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","merged_into"]
+    list_display=["id","formatted_name","description","wanted_id_count"]
+    list_filter=[]
+    autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","merged_into","distinguish_from"]
     readonly_fields = ('uuid',)
     
     inlines = [
@@ -41,7 +47,12 @@ class PersonAdmin(admin.ModelAdmin):
     def get_search_results(self, request, queryset, search_term):
         if search_term == '':
             return (Person.objects.all(),True)
-
+        try:
+            id=int(search_term)
+            q=Q(id=id)|Q(pseudonyms__name__icontains=search_term)|Q(usernames__name__name__istartswith=search_term)|Q(user_numbers__number=search_term)
+            return (Person.objects.filter(q),True)
+        except:
+            pass
         q=Q(first_name__name__istartswith=search_term) | Q(last_name__name__istartswith=search_term)
         q1=Person.objects.filter(q)
         q2=Person.objects.filter(pseudonyms__name__icontains=search_term)
@@ -55,7 +66,15 @@ class PersonAdmin(admin.ModelAdmin):
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
     autocomplete_fields=["tld","tags","name","parent_site"]
-    pass
+    list_display=["id","domain","parent_site_name","brief","user_id_format_string","tld"]
+    #list_filter=["tld"] #TODO doesn't work because options include all shared strings
+    exclude=["user_id_patterns"]
+    ordering=['domain']
+    inlines=[UrlPatternInline]
+    
+    def get_search_results(self, request, queryset, search_term):
+        queryset.filter(user_id_format_string__isnull=False)
+        return super().get_search_results(request, queryset, search_term)
 
     
 # Handled by inlines, reinstate if new fields render it necessary to have these as an admin panel.

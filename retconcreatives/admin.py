@@ -62,12 +62,27 @@ class SeriesAdmin(admin.ModelAdmin):
 class EpisodeAdmin(TaggableAdminMixin):
     autocomplete_fields=['tags','ambiguous_tags','part_of','published_by','created_by']
     exclude=["external_representation","files"]
+    list_display=['preferred_name','name','published_on','publisher_names','part_of']
+    list_editable=['part_of']
+    search_fields=['name','localized_titles__name','published_by__name']
     inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline,PortrayalInline)
+    actions=['set_date_precision_to_year','set_date_precision_to_month','set_date_precision_to_day']
+    def set_date_precision_to_year(modeladmin, request, queryset):
+        queryset.all().update(published_on_precision=Episode.DATE_PRECISION_YEAR)
+    def set_date_precision_to_month(modeladmin, request, queryset):
+        queryset.all().update(published_on_precision=Episode.DATE_PRECISION_MONTH)
+    def set_date_precision_to_day(modeladmin, request, queryset):
+        queryset.all().update(published_on_precision=Episode.DATE_PRECISION_DAY)
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
     autocomplete_fields=['name','tags','parent','ambiguous_tags','website']
     search_fields=['name','website__name']
+    list_display=['name','defunct','parent','website']
+    list_editable=['defunct','parent','website']
+    list_filter=['defunct']
+    #allowing sort by name actually sorts on shadredsting_id which is wrong, but the model's default ordering is correct
+    sortable_by=['defunct','parent','website'] 
     exclude=["external_representation"]
     pass
 

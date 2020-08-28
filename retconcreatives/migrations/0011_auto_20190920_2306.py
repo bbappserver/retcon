@@ -13,10 +13,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RemoveField(
             model_name='series',
-            name='id',
-        ),
-        migrations.RemoveField(
-            model_name='series',
             name='tags',
         ),
         migrations.AddField(
@@ -24,6 +20,16 @@ class Migration(migrations.Migration):
             name='creativework_ptr',
             field=models.OneToOneField(auto_created=True, default=0, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='retconcreatives.CreativeWork'),
             preserve_default=False,
+        ),
+        migrations.AlterField(
+            model_name='episode',
+            name='part_of',
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='retconcreatives.CreativeWork'),
+            preserve_default=False,
+        ),
+        migrations.RemoveField(
+            model_name='series',
+            name='id',
         ),
         migrations.AlterField(
             model_name='creativework',

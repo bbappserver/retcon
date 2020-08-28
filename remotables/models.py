@@ -1,5 +1,6 @@
 from django.db import models
-
+import datetime
+from dateutil import tz
 # Create your models here.
 # class URLScheme(models.model):
 #     name=models.CharField(max_length=16)
@@ -7,7 +8,7 @@ from django.db import models
 #     name=models.CharField(max_length=16)
 
 class Resource(models.Model):
-    unescaped_url= models.CharField(max_length=2000,help_text="The url without any percent notation characters or plus substitutions of spaces")
+    url= models.CharField(max_length=2000,help_text="The url without any percent notation characters or plus substitutions of spaces")
     added_at= models.DateTimeField(auto_now=True)
 
     #The cache vaidity period usually provided by the webserver, null for indefinite
@@ -17,7 +18,7 @@ class Resource(models.Model):
         abstract=True
     
     def __str__(self):
-        return "{} {}".format(self.unescaped_url,self.added_at)
+        return "{} {}".format(self.url,self.added_at)
 
 class ContentResource(Resource):
     '''URLs which serve content often intended to remain the same for long periods of time or indefinitely'''
@@ -26,6 +27,15 @@ class ContentResource(Resource):
     #This field should not be updated unless the cotnent was fully fetched, that way entities which need to 
     #reference the entity thes resource represents can be expnaded without needing to full expand this resource.
     content_last_fetched = models.DateTimeField(null=True,blank=True)
+
+    @property
+    def is_cache_valid(self):
+        if self.valid_until is None:
+            return True
+        else:
+            local = tz.gettz()
+            now=datetime.datetime.now(tz=local)
+            return now < self.valid_until
 
 # class HTTPResource(ContentResource):
 #     http_verbs={"GET":0,"POST":1}
