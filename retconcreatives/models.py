@@ -25,7 +25,7 @@ class Company(semantictags.Taggable):
     parent=models.ForeignKey("self",on_delete=models.PROTECT,null=True,blank=True,related_name="children")
     website = models.ForeignKey("retconpeople.Website",on_delete=models.PROTECT,null=True,blank=True)
     defunct = models.BooleanField(null=True,blank=True)
-    external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
+    external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
 
     def __str__(self):
         return self.name.name
@@ -62,7 +62,7 @@ class CreativeWork(semantictags.Taggable):
     created_by = models.ForeignKey("retconpeople.Person",on_delete=models.PROTECT,null=True,blank=True,related_name="+")
     # representes_collections = models.ManyToManyField('retconstorage.Collection')
     # representes_remotables = models.ManyToManyField('retconremotables.RemoteEntity')
-    external_representation= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
+    external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
     files= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
 
     def local_name(self,language=django.utils.translation.get_language()):
@@ -225,8 +225,21 @@ class Episode(CreativeWork):
     def __str__(self):
         return self.preferred_name()
 
-class Book(Episode):
+#TODO MIGRATE MEDIUMS TO SUBTYPES
+class Recording(Episode):
+    production_number=models.IntegerField(null=True,blank=True)
+
+class Writing(Episode):
     authors = models.ManyToManyField('retconpeople.Person')
+    class Meta:
+        abstract=True
+
+class Book(Writing):
+    pass
+
+class Software(Episode):
+    SFT_PLATFORM_HELP='Platforms this sofware runs on including consoles and operating systems'
+    platforms= models.ManyToManyField('self',blank=True,related_name='+',help_text=SFT_PLATFORM_HELP)
     pass
 
 class Illustration(CreativeWork):
@@ -244,8 +257,10 @@ class MovieManager(models.Manager):
             medium=Episode.MOVIE)
 
 class Movie(Episode):
-    medium=Episode.MOVIE
     objects=MovieManager()
+    def __init__(self,*args,**kwargs):
+        kwargs['medium']=Episode.MOVIE
+        super().__init__(*args,**kwargs)
     class Meta:
         proxy=True
 
@@ -253,12 +268,8 @@ class TVEpisode(Episode):
     class Meta:
         proxy=True
 
-class Software(Episode):
-    SFT_PLATFORM_HELP='Platforms this sofware runs on including consoles and operating systems'
-    platforms= models.ManyToManyField('self',blank=True,related_name='+',help_text=SFT_PLATFORM_HELP)
-    pass
 
-class WebVideo(Episode):
+class WebVideo(Recording):
     pass
 
 class Franchise(models.Model):

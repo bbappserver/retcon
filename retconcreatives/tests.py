@@ -147,7 +147,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
     def test_create_with_urls(self):
         d=self.default_child()
         urls=['http://www.twitter.com/user/123','http://www.twitter.com/user/124']
-        d['external_representation']=[ {'url':u} for u in urls ]
+        d['external_representations']=[ {'url':u} for u in urls ]
         response=self.client.post('/api/series/',d,format='json')
         self.assertEqual(response.status_code,status.HTTP_201_CREATED,msg=response.content)
         id=int(response.json()['id'])
@@ -155,8 +155,8 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
     
         rd=response.json()
-        self.assertCoverFilteredDict(d,rd,['external_representation'])
-        for x in rd['external_representation']:
+        self.assertCoverFilteredDict(d,rd,['external_representations'])
+        for x in rd['external_representations']:
             self.assertIn(x['url'],urls)
 
     def test_create_with_files(self):
@@ -275,7 +275,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
     #     self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
         
     #     rd=response.json()
-    #     self.assertCoverFilteredDict(d,rd,['id','produced_by','published_by','created_by','external_representation'])
+    #     self.assertCoverFilteredDict(d,rd,['id','produced_by','published_by','created_by','external_representations'])
     #     for x in rd['produced_by']:
     #         self.assertIn(x['name'],['megacorp','megacorp2'])
     #     for x in rd['published_by']:
@@ -287,7 +287,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
     #     d['created_by']={'first_name':'megacorp'}
     #     d['published_by']=[{'name':'megacorp'},{'name':'megacorp2'}]
     #     d['produced_by']=[{'name':'megacorp'}]
-    #     d['external_representation']=[
+    #     d['external_representations']=[
     #         {'url':'http://www.twitter.com/user/123'},
     #         {'url':'http://www.twitter.com/user/124'}]
     #     response=self.client.post('/api/series/',d,format='json')
