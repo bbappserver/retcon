@@ -4,7 +4,9 @@ from rest_framework import serializers, viewsets,status,decorators
 from rest_framework.response import Response
 from .models import Tag, TagLabel
 from sharedstrings.api import StringsField
-
+from sharedstrings.models import Strings
+from sharedstrings.api import StringsSerializer
+from retcon.api import RetconModelViewSet
 
 class TagLabelSerializer(serializers.ModelSerializer):
     language = serializers.SlugRelatedField(
@@ -139,3 +141,29 @@ class TagViewSet(viewsets.ModelViewSet):
             return Response("An error occured", status=status.HTTP_400_BAD_REQUEST)
         
 
+class TaggableViewsetMixin(RetconModelViewSet):
+    
+    @decorators.action(detail=True, methods=['get','post','delete'])
+    def tags(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='tags'
+        subordinate_field_serializer = TagSerializer
+        subordinate_type = Tag
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type)
+
+    @decorators.action(detail=True, methods=['get','post','delete'])
+    def ambiguous_tags(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='ambiguous_tags'
+        subordinate_field_serializer = StringsSerializer
+        subordinate_type = Strings
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type)
+
+class TaggableSerializerMixin(serializers.ModelSerializer):
+    tags= serializers.PrimaryKeyRelatedField(required=False,allow_null=False,many=True,
+    queryset=Tag.objects.all(),
+    style={'base_template': 'input.html'})
+    
+    ambiguous_tags= serializers.SlugRelatedField(required=False,allow_null=False,many=True,slug_field='name',
+    queryset=Strings.objects.all(),
+    style={'base_template': 'input.html'})

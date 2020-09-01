@@ -5,6 +5,7 @@ from remotables.api import ContentResourceSerializer
 from remotables.models import ContentResource
 from sharedstrings.models import Strings
 from sharedstrings.api import StringsField
+from semantictags.api import TaggableViewsetMixin,TaggableSerializerMixin
 from retconstorage.models import ManagedFile
 from rest_framework import serializers,viewsets,status,response
 from rest_framework.decorators import action,renderer_classes
@@ -46,7 +47,7 @@ class CompanySerializer(serializers.HyperlinkedModelSerializer):
 
 class CompanyViewSet(viewsets.ModelViewSet):
     """
-    API endpoint that allows users to be viewed or edited.
+    API endpoint that allows Companys to be viewed or edited.
     """
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
@@ -89,48 +90,89 @@ class CompanyViewSet(viewsets.ModelViewSet):
     #     else:
     #         return Response(serializer.data,status=404)
 
+class CreativeWorkSerializerMixin(TaggableSerializerMixin):
+    files= serializers.SlugRelatedField(many=True,slug_field="sha256",read_only=True,style={'base_template': 'input.html'})
+    
+    external_representations = ContentResourceSerializer(required=False,allow_null=False,many=True,
+    #view_name='company-detail',
+    # queryset=ContentResource.objects.all(),
+    style={'base_template': 'input.html'})
 
-class EpisodeSerializer(serializers.ModelSerializer):
+
+class CreativeWorkViewsetMixin(TaggableViewsetMixin):
+
+    @action(detail=True, methods=['get','post','delete'])
+    def producers(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='produced_by'
+        subordinate_field_serializer = CompanySerializer
+        subordinate_type = Company
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type)
+    
+
+    @action(detail=True, methods=['get','post','delete'])
+    def publishers(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='published_by'
+        subordinate_field_serializer = CompanySerializer
+        subordinate_type = Company
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type)
+
+class EpisodeSerializer(CreativeWorkSerializerMixin):
     
     # id= serializers.IntegerField()
     # name = serializers.CharField()
+    # files= serializers.SlugRelatedField(many=True,slug_field="sha256",read_only=True,style={'base_template': 'input.html'})
+    # # tags = serializers.PrimaryKeyRelatedField(required=False,allow_null=False,many=True,
+    # # #view_name='company-detail',
+    # # queryset=Tag.objects.all(),
+    # # style={'base_template': 'input.html'})
+    # # external_representations = serializers.PrimaryKeyRelatedField(required=False,allow_null=False,many=True,
+    # # #view_name='company-detail',
+    # # queryset=ContentResource.objects.all(),
+    # # style={'base_template': 'input.html'})
+
+    # external_representations = ContentResourceSerializer(required=False,allow_null=False,many=True,
+    # #view_name='company-detail',
+    # # queryset=ContentResource.objects.all(),
+    # style={'base_template': 'input.html'})
 
     class Meta:
         model = Episode
-        fields = ['id','name']
+        exclude = []
     
 
-class EpisodeViewSet(viewsets.ModelViewSet):
+class EpisodeViewSet(CreativeWorkViewsetMixin):
     """
-    API endpoint that allows users to be viewed or edited.
+    API endpoint that allows Episodes to be viewed or edited.
     """
     queryset = Episode.objects.all()
     serializer_class = EpisodeSerializer
 
-class SeriesSerializer(serializers.ModelSerializer):
+class SeriesSerializer(CreativeWorkSerializerMixin):
     
     # id= serializers.IntegerField()
     # name = serializers.CharField()
 
-    published_by = serializers.PrimaryKeyRelatedField(required=False,
-        many=True, 
-        #view_name='company-detail',
-    queryset=Company.objects.all(),
-    style={'base_template': 'input.html'})
+    # published_by = serializers.PrimaryKeyRelatedField(required=False,
+    #     many=True, 
+    #     #view_name='company-detail',
+    # queryset=Company.objects.all(),
+    # style={'base_template': 'input.html'})
 
-    created_by = serializers.PrimaryKeyRelatedField(required=False,allow_null=True,
-    #view_name='person-detail',
-    queryset=Person.objects.all(),
-    style={'base_template': 'input.html'})
+    # created_by = serializers.PrimaryKeyRelatedField(required=False,allow_null=True,
+    # #view_name='person-detail',
+    # queryset=Person.objects.all(),
+    # style={'base_template': 'input.html'})
 
-    produced_by = serializers.PrimaryKeyRelatedField(required=False,allow_null=False,many=True,
-    #view_name='company-detail',
-    queryset=Company.objects.all(),
-    style={'base_template': 'input.html'})
+    # produced_by = serializers.PrimaryKeyRelatedField(required=False,allow_null=False,many=True,
+    # #view_name='company-detail',
+    # queryset=Company.objects.all(),
+    # style={'base_template': 'input.html'})
 
-    files= serializers.SlugRelatedField(many=True,slug_field="sha256",read_only=True,style={'base_template': 'input.html'})
+    # files= serializers.SlugRelatedField(many=True,slug_field="sha256",read_only=True,style={'base_template': 'input.html'})
 
-    external_representations= ContentResourceSerializer(many=True,required=False)
+    # external_representations= ContentResourceSerializer(many=True,required=False)
 
     def create(self, validated_data):
         urls_data = validated_data.pop('external_representations') if 'external_representations' in validated_data  else []
@@ -200,9 +242,9 @@ class SeriesSerializer(serializers.ModelSerializer):
         #fields = ['id','name','published_by','published_on','published_on_precision','created_by','files','external_representations','parent_series','medium','produced_by']
     
 
-class SeriesViewSet(RetconModelViewSet):
+class SeriesViewSet(CreativeWorkViewsetMixin):
     """
-    API endpoint that allows users to be viewed or edited.
+    API endpoint that allows Series to be viewed or edited.
     """
     queryset = Series.objects.all()
     serializer_class = SeriesSerializer
