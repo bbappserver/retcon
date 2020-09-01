@@ -83,6 +83,13 @@ class TagLabelViewSet(viewsets.ModelViewSet):
         Tag.save()
         pass
 
+    @decorators.action(detail=True, methods=['get','post','delete'])
+    def definitions(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='definitions'
+        subordinate_field_serializer = TagSerializer
+        subordinate_type = Tag
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -123,6 +130,25 @@ class TagViewSet(viewsets.ModelViewSet):
     """
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+
+    @decorators.action(detail=True, methods=['get','post','delete'])
+    def labels(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='labels'
+        subordinate_field_serializer = TagLabelSerializer
+        subordinate_type = TagLabel
+
+        d=request.json()
+        lang=None
+        if 'locale' in d:
+            lang= d['locale'] 
+            del d['locale']
+        else:
+            lang=request.LANGUAGE_CODE
+            if lang is None:
+                return Response("Locale is needed but couldn ot automatically be determined", status=status.HTTP_400_BAD_REQUEST)
+        d['language__isocode']=lang
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type,data=d)
 
     @decorators.action(methods=['patch'],detail=True)
     def add_label(self,request):
