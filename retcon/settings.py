@@ -68,7 +68,6 @@ DEBUG = True
 # Application definition
 
 INSTALLED_APPS = [
-    'corsheaders',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -84,11 +83,10 @@ INSTALLED_APPS = [
     'retconcreatives',
     'remotables',
     'retconstorage',
-    'retcon'
+    'retconposts',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -118,10 +116,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'retcon.wsgi.application'
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4200",
-    "http://127.0.0.1:4200",
-]
+
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
