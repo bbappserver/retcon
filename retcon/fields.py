@@ -76,4 +76,17 @@ class PartialDateField(models.Field):
     def value_to_string(self,obj):
         value = self.value_from_object(obj)
         return value.string_repr()
-    
+
+class TinyIntegerField(models.SmallIntegerField):
+    def db_type(self, connection):
+        if connection.settings_dict['ENGINE'] == 'django.db.backends.mysql':
+            return "tinyint"
+        else:
+            return super(TinyIntegerField, self).db_type(connection)
+
+class PositiveTinyIntegerField(models.PositiveSmallIntegerField):
+    def db_type(self, connection):
+        if connection.settings_dict['ENGINE'] == 'django.db.backends.mysql':
+            return "tinyint unsigned"
+        else:
+            return super(PositiveTinyIntegerField, self).db_type(connection)
