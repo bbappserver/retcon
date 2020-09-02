@@ -5,7 +5,9 @@ from rest_framework.decorators import action,renderer_classes
 from rest_framework.renderers import JSONRenderer
 from .models import Person,UserName,UserNumber,Website,UrlPattern
 from sharedstrings.api import StringsField
+from sharedstrings.models import Strings
 from semantictags.api import TagSerializer,TagLabelSerializer
+from retcon.api import RetconModelViewSet
 from django.shortcuts import redirect,get_object_or_404
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
@@ -105,18 +107,18 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
         depth=1
         fields = ['id','first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers','distinguish_from','uuid']
     
-    def create(self, validated_data):
-        # tracks_data = validated_data.pop('tracks')
-        # urls = validated_data.pop('urls')
-        person = Person.objects.create(**validated_data)
-        for track_data in urls:
+    # def create(self, validated_data):
+    #     # tracks_data = validated_data.pop('tracks')
+    #     # urls = validated_data.pop('urls')
+    #     person = Person.objects.create(**validated_data)
+    #     for track_data in urls:
             
-            Track.objects.create(album=album, **track_data)
-        return person
-        # profile_data = validated_data.pop('profile')
+    #         Track.objects.create(album=album, **track_data)
+    #     return person
+    #     # profile_data = validated_data.pop('profile')
         
-        # Profile.objects.create(user=user, **profile_data)
-        return person
+    #     # Profile.objects.create(user=user, **profile_data)
+    #     return person
     
     
 
@@ -146,7 +148,7 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
     #     return instance
     
 
-class PersonViewSet(viewsets.ModelViewSet):
+class PersonViewSet(RetconModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
     """
@@ -272,6 +274,32 @@ class PersonViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response([],status=501)
 
+    @action(detail=True, methods=['get','post','delete'])
+    def distinguish_from(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='distinguish_from'
+        subordinate_field_serializer = PersonSerializer
+        subordinate_type = Person
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type)
+
+    @action(detail=True, methods=['get','post','delete'])
+    def pseudonyms(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='pseudonyms'
+        subordinate_field_serializer = None
+        subordinate_type = Strings
+        data= [ {'name':x} for x in request.data]
+
+        with transaction.atomic():
+            #create string objects as necessary
+            for d in data:
+                Strings.objects.get_or_create(**d)
+
+            return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type,data=data)
+    
+    # @action(detail=True, methods=['get','post','delete'])
+    # def distinguish_from(self, request, pk=None,format=None):
+    #     raise NotImplementedError()
 
             
 
