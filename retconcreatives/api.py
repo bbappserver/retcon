@@ -201,7 +201,7 @@ class SeriesSerializer(CreativeWorkSerializerMixin):
             try:
                 for x in files:
                     b=bytes.fromhex(x)
-                    o=ManagedFile.objects.get(sha256=x)
+                    o=ManagedFile.objects.get_or_create(sha256=x)
                     series.files.add(o)
             except ManagedFile.DoesNotExist as e:
                 return response.Response({'status':'fail','message':'None existant file','data':x},status=status.HTTP_428_PRECONDITION_REQUIRED)
