@@ -30,13 +30,24 @@ class PersonAPICrudTest(APICRUDTest):
         return {'domain':'twitter.com','name':'someuser'}
     def defaultURLDict(self):
         return {'url':'ttp://www.somesite.com/person/1'}
+
+    def defaultWebsiteDict(self):
+        return {
+            'domain':'twitter.com',
+            'description':'the premier mircroblogging website'
+        }
     def defaultTagDict(self):
         return {}
 
-    def createDefaultPerson(self):
+    def createDefaultPerson(self) -> Person:
         p=Person(**self.defaultPersonDict())
         p.save()
         return p
+    def createDefaultWebsite(self) -> Website:
+        p=Website(**self.defaultWebsiteDict())
+        p.save()
+        return p
+
     def createDefaultPersonAPI(self) -> response.Response:
         url='/api/people/'
         return self.client.post(url,data=self.defaultPersonDict(),format='json')
@@ -98,43 +109,81 @@ class PersonAPICrudTest(APICRUDTest):
     
     def testPersonAddUsername(self):
         p=self.createDefaultPerson()
-        url='/api/people/{}/users'.format(p.id)
+        
+        with self.subTest("Fail no such site"):
+            url='/api/people/{}/users'.format(p.id)
+            r=self.client.post(url,data=self.defaultUsernameDict(),format='json')
+            self.assertEqual(r.status_code,status.HTTP_404_NOT_FOUND)
+
         with self.subTest("Success"):
-            raise NotImplementedError()
-        with self.subTest("Fail duplicate reference"):
-            raise NotImplementedError()
+            w=self.createDefaultWebsite()
+            d=self.defaultUsernameDict()
+            url='/api/people/{}/users'.format(p.id)
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_200_OK)
+            un=p.usernames.all()[0]
+            self.assertEqual(un.name.name,d['name'])
+            self.assertEqual(un.website_id,w.id)
         with self.subTest("Fail conflict/in use"):
-            raise NotImplementedError()
+            p2=self.createDefaultPerson()
+            url='/api/people/{}/users'.format(p2.id)
+            r=self.client.post(url,data=self.defaultUsernameDict(),format='json')
+            self.assertEqual(r.status_code,status.HTTP_409_CONFLICT)
     
     def testPersonAutomaticCreateAddUsername(self):
+        
         d=[
             {
                 'name':'a',
-                'domain':'twitter.com'
+                'domain':'null.com'
             }
         ]
+        with self.subTest("Malformed"):
+            url='/api/people/autocreate/'
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_400_BAD_REQUEST)
+        d={
+            'identifiers':[{
+                'name':'a',
+                'domain':'null.com'
+            }]
+        }
+        with self.subTest("Create nonexisting site"):
+            url='/api/people/autocreate/'
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_404_NOT_FOUND)
+        
+        w=self.createDefaultWebsite()
+        d={
+            'identifiers':[{
+                'name':'a',
+                'domain':w.domain
+            }]
+        }
         with self.subTest("Create new"):
-            raise NotImplementedError()
+            url='/api/people/autocreate/'
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_201_CREATED)
         with self.subTest("Create existing"):
-            raise NotImplementedError()
-
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_200_OK)
         with self.subTest("Augment existing"):
-            d.append({
+            d['identifiers'].append({
                 'name':'b',
-                'domain':'twitter.com'
+                'domain':w.domain
             })
-            raise NotImplementedError()
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_200_OK)
         
         with self.subTest("Conflict"):
-            aux={
-                'name':'c',
-                'domain':'twitter.com'
-            }
+            aux={'name':'c','domain':w.domain}
+            daux={'identifiers':[aux]}
             #create c as independant
-            d.append(aux)
+            r=self.client.post(url,data=daux,format='json')
+            d['identifiers'].append(aux)
             #try to associate c with a different existing person
-            raise NotImplementedError()
-
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_409_CONFLICT)
     # def testPersonAddDistinguish(self):
     #     with self.subTest("Success"):
     #         raise NotImplementedError()
