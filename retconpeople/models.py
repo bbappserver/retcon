@@ -182,17 +182,20 @@ class Person(models.Model):
                 return self.first_name  
             else:
                 try:
+                    #This occasionally causes crashes by infintie recursion when the debugger request formatting
+                    #This happens for a currently unknown reason
                     if self.pseudonyms.count()>0:
                         o= self.pseudonyms.all()[0]
-                        return o.name
-                except:
-                    try:
+                        return o.name.name
+                    else:
                         un=self.usernames
-                        u=un[0]
-                        o=un.name.get()
-                        return o.name
-                    except:
-                        return "?"
+                        if un.count()>0:
+                            u=un[0]
+                            o=un.name
+                            return o.name
+                    # return 'debug name formate error'
+                except:
+                    return "?"
         else:
             if self.first_name is not None:
                 if shorten:
