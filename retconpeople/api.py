@@ -5,10 +5,13 @@ from rest_framework.decorators import action,renderer_classes
 from rest_framework.renderers import JSONRenderer
 from .models import Person,UserName,UserNumber,Website,UrlPattern
 from sharedstrings.api import StringsField
+from sharedstrings.models import Strings
 from semantictags.api import TagSerializer,TagLabelSerializer
+from retcon.api import RetconModelViewSet
 from django.shortcuts import redirect,get_object_or_404
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 import json
 
 from rest_framework import renderers
@@ -105,18 +108,18 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
         depth=1
         fields = ['id','first_name', 'last_name','pseudonyms', 'description','merged_into', 'tags','usernames','user_numbers','distinguish_from','uuid']
     
-    def create(self, validated_data):
-        # tracks_data = validated_data.pop('tracks')
-        # urls = validated_data.pop('urls')
-        person = Person.objects.create(**validated_data)
-        for track_data in urls:
+    # def create(self, validated_data):
+    #     # tracks_data = validated_data.pop('tracks')
+    #     # urls = validated_data.pop('urls')
+    #     person = Person.objects.create(**validated_data)
+    #     for track_data in urls:
             
-            Track.objects.create(album=album, **track_data)
-        return person
-        # profile_data = validated_data.pop('profile')
+    #         Track.objects.create(album=album, **track_data)
+    #     return person
+    #     # profile_data = validated_data.pop('profile')
         
-        # Profile.objects.create(user=user, **profile_data)
-        return person
+    #     # Profile.objects.create(user=user, **profile_data)
+    #     return person
     
     
 
@@ -146,7 +149,7 @@ class PersonSerializer(serializers.HyperlinkedModelSerializer):
     #     return instance
     
 
-class PersonViewSet(viewsets.ModelViewSet):
+class PersonViewSet(RetconModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
     """
@@ -190,16 +193,46 @@ class PersonViewSet(viewsets.ModelViewSet):
     def autocreate(self, request, pk=None,format=None):
         '''Creates a person from the given information or returns conflicting ids'''
         d=request.data
+        if not ('urls' in d or 'identifiers' in d):
+            r= Response({'status':'fail','message':'Body must contain urls or identifiers key'},status=400)
+            return r
+        
+        #autocorrect a single url into a list
+        if 'urls' in d and not isinstance(d['urls'],list):
+            d['urls']=[d['urls']]
+
+
         urls = d['urls'] if 'urls' in d else []
         identifiers = d['identifiers'] if 'identifiers' in d else []
         allow_partial= 'allowpartial' in request.query_params and request.query_params['allowpartial'] =='1'
         try:
-            created,partial,id=Person.create_from_identifiers(user_identifiers=identifiers,urls=urls,fail_on_missing_domain= not allow_partial)
-            serializer=PersonSerializer(id)
+            serializer=None
+            partial=False
+            created=False
+            try:
+                t=Person.create_from_identifiers(user_identifiers=identifiers,urls=urls,fail_on_missing_domain= not allow_partial)
+                if t==False:
+                    m='No websites matching that pattern'
+                    r= Response({'status':'fail','message':m},status=400)
+                    return r
+                else:
+                    created,partial,id=t
+                serializer=PersonSerializer(id)
+            except Person.DuplicateIdentityError as e:
+                identities=e.identities
+                serializer=PersonSerializer(identities,many=True)
+                return Response(serializer.data,status=409)
+            except ValueError as e:
+                if settings.DEBUG:
+                    m=str(m)
+                else:
+                    m='Something about that input was wrong'
+                r= Response({'status':'fail','message':m},status=400)
+                return r
 
             if partial:
                 r= Response(serializer.data,status=207)
-                response['Created'] = created
+                response.data['created'] = created
                 return r
 
             if created:
@@ -207,10 +240,6 @@ class PersonViewSet(viewsets.ModelViewSet):
             else:
                 return Response(serializer.data,status=200)
 
-        except Person.DuplicateIdentityError as e:
-            identities=e.identities
-            serializer=PersonSerializer(identities,many=True)
-            return Response(serializer.data,status=409)
         except ObjectDoesNotExist as e:
             return Response(str(e),status=404)
         # except NotImplementedError:
@@ -222,56 +251,80 @@ class PersonViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get','post','delete'])
     def users(self, request, pk=None,format=None):
         
-        person = self.get_object()
-        
-        try:
-            with transaction.atomic():
-                if request.method == 'GET':
-                    l=[]
-                    l.extend(LeafUsernameSerializer(person.usernames,many=True).data)
-                    l.extend(LeafUserNumberSerializer(person.user_numbers,many=True).data)
-                    return Response(l)
-                elif request.method == 'POST':
-                    l=request.data
-                    for e in l:
-                        if('name' in e):
-                            u = LeafUsernameSerializer(data=e)
-                            if u.is_valid(): 
-                                u=u.save()
-                                person.usernames.add(u)
-                            else:
-                                raise serializers.ValidationError()
-                        else:
-                            u=LeafUserNumberSerializer(data=e)
-                            if u.is_valid(): 
-                                u=u.save()
-                                person.user_numbers.add(u)
-                            else:
-                                raise serializers.ValidationError()
-                    person.save()
-                    return Response([],status=200)
-                elif request.method == 'DELETE':
-                    l=request.data
-                    for e in l:
-                        if('name' in e):
-                            u = LeafUsernameSerializer(data=e)
-                            if u.is_valid(): 
-                                u=UserName.objects.get(**u.validated_data)
-                            person.usernames.remove(u)
-                            u.delete()
-                        else:
-                            u = LeafUserNumberSerializer(data=e)
-                            if u.is_valid(): 
-                                u=UserNumber.objects.get(**u.validated_data)
-                            person.usernames.remove(u)
-                            u.delete()
-                    person.save()
-                    return Response([],status=200)
-        except serializers.ValidationError as e:
-            return Response([],status=401)
-        except Exception as e:
-            return Response([],status=501)
+        l=request.data
+        if not isinstance(l,list):
+            l=[l]
 
+        #resolve domains into sites
+        #split out numbers
+        #create subordinate objects
+        l_usernumber=[]
+        l_username=[]
+
+        with transaction.atomic():
+            master=self.get_object()
+            
+            for e in l:
+                if 'domain' in e:
+                    try:
+                        w= Website.objects.get(domain=e['domain'])
+                        e['website']=w
+                        del e['domain']
+                    except Website.DoesNotExist:
+                        return Response({'status':'fail','message':'There is no website with the domain {}'.format(e['domain'])},status=status.HTTP_404_NOT_FOUND)
+                try:
+                    n=int(e['name'])
+                    e['number']=n
+                    del e['name']
+                    un,created=UserNumber.objects.get_or_create(e)
+                    if not created and (un.belongs_to_id is not None or un.belongs_to_id != master.id):
+                        return Response({'status':'fail','message':'{}@{} in use'.format(e['number'],e['website'])},status=status.HTTP_409_CONFLICT)
+                    l_usernumber.append({'id':un.id})
+                except:
+                    un,created=UserName.objects.get_or_create(e)
+                    if not created and (un.belongs_to_id is not None or un.belongs_to_id != master.id):
+                        return Response({'status':'fail','message':'{}@{} in use'.format(e['name'],e['website'])},status=status.HTTP_409_CONFLICT)
+                    l_username.append({'id':un.id})
+            
+            subordinate_field_name='usernames'
+            subordinate_field_serializer = UsernameSerializer
+            subordinate_type = UserName
+            r= self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type,data=l_username)
+            if r.status_code !=status.HTTP_200_OK:
+                return r
+            subordinate_field_name='user_numbers'
+            subordinate_field_serializer = UserNumberSerializer
+            subordinate_type = UserNumber
+            r= self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type,data=l_usernumber)
+            return r
+        
+
+    @action(detail=True, methods=['get','post','delete'])
+    def distinguish_from(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='distinguish_from'
+        subordinate_field_serializer = PersonSerializer
+        subordinate_type = Person
+        return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type)
+
+    @action(detail=True, methods=['get','post','delete'])
+    def pseudonyms(self, request, pk=None,format=None):
+        master=self.get_object()
+        subordinate_field_name='pseudonyms'
+        subordinate_field_serializer = None
+        subordinate_type = Strings
+        data= [ {'name':x} for x in request.data]
+
+        with transaction.atomic():
+            #create string objects as necessary
+            for d in data:
+                Strings.objects.get_or_create(**d)
+
+            return self.generic_master_detail_list_request_handler(request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type,data=data)
+    
+    # @action(detail=True, methods=['get','post','delete'])
+    # def distinguish_from(self, request, pk=None,format=None):
+    #     raise NotImplementedError()
 
             
 
