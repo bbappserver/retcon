@@ -8,7 +8,7 @@ from dateutil import tz
 #     name=models.CharField(max_length=16)
 
 class Resource(models.Model):
-    url= models.CharField(max_length=2000)
+    url= models.URLField(max_length=2000)
     added_at= models.DateTimeField(auto_now=True)
 
     #The cache vaidity period usually provided by the webserver, null for indefinite
