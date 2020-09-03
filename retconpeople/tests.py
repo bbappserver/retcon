@@ -190,13 +190,31 @@ class PersonAPICrudTest(APICRUDTest):
             self.assertEqual(r.status_code,status.HTTP_409_CONFLICT)
         
         with self.subTest('Url'):
-            upat=UrlPattern(website=w,pattern='^(?:https?:\/\/)?(?:www\.)?(?:twitter\.com\/){1,2}@?([^\/]+)\/?$')
+            upat=UrlPattern(website=w,pattern=r'^(?:https?:\/\/)?(?:www\.)?(?:twitter\.com\/){1,2}@?([^\/]+)\/?$')
             upat.save()
             d={'urls':'http://www.twitter.com/username'}
             r=self.client.post(url,data=d,format='json')
             self.assertEqual(r.status_code,status.HTTP_201_CREATED)
-            #TODO check it got into DB, but I use this live so I'm pretty sure it does
+        with self.subTest('Url[1]'):
+            d={'urls':['http://www.twitter.com/username2']}
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_201_CREATED)
+        
+        with self.subTest('Url[2]'):
+            d={'urls':['http://www.twitter.com/username3','http://www.twitter.com/username4']}
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_201_CREATED)
+        with self.subTest('Url unify'):
+            d={'urls':['http://www.twitter.com/username','http://www.twitter.com/username5']}
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_200_OK)
+        with self.subTest('Url nonexistant website'):
+            d={'urls':'http://www.twatter.com/username'}
+            r=self.client.post(url,data=d,format='json')
+            self.assertNotEqual(r.status_code,status.HTTP_200_OK)
+            self.assertNotEqual(r.status_code,status.HTTP_201_CREATED)
             
+
     # def testPersonAddDistinguish(self):
     #     with self.subTest("Success"):
     #         raise NotImplementedError()

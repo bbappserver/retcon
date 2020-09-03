@@ -251,8 +251,9 @@ class Person(models.Model):
                     else:
                         #(name,domain) form
                         name_sites.append(x)
-
-                #Chec if there is an existing person with any of these ids
+                if len(name_sites)==0:
+                    return False
+                #Check if there is an existing person with any of these ids
                 pid = cls.search_by_identifiers(urls=[],user_identifiers=name_sites,expect_single=True)
                 if len(pid)>0:
                     #if there is unpack them

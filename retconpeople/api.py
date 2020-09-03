@@ -196,6 +196,11 @@ class PersonViewSet(RetconModelViewSet):
         if not ('urls' in d or 'identifiers' in d):
             r= Response({'status':'fail','message':'Body must contain urls or identifiers key'},status=400)
             return r
+        
+        #autocorrect a single url into a list
+        if 'urls' in d and not isinstance(d['urls'],list):
+            d['urls']=[d['urls']]
+
 
         urls = d['urls'] if 'urls' in d else []
         identifiers = d['identifiers'] if 'identifiers' in d else []
@@ -205,7 +210,13 @@ class PersonViewSet(RetconModelViewSet):
             partial=False
             created=False
             try:
-                created,partial,id=Person.create_from_identifiers(user_identifiers=identifiers,urls=urls,fail_on_missing_domain= not allow_partial)
+                t=Person.create_from_identifiers(user_identifiers=identifiers,urls=urls,fail_on_missing_domain= not allow_partial)
+                if t==False:
+                    m='No websites matching that pattern'
+                    r= Response({'status':'fail','message':m},status=400)
+                    return r
+                else:
+                    created,partial,id=t
                 serializer=PersonSerializer(id)
             except Person.DuplicateIdentityError as e:
                 identities=e.identities
