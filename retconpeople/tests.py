@@ -4,7 +4,7 @@ from django.db.models.deletion import ProtectedError
 from rest_framework import test as rsttest
 from rest_framework import status,response
 from retcon.test.CRUDTest import APICRUDTest
-from retconpeople.models import Person,Website,UserName,UserNumber
+from retconpeople.models import Person,Website,UserName,UserNumber,UrlPattern
 from retconcreatives.models import Series,Episode,Company
 from retconstorage.models import ManagedFile
 from remotables.models import ContentResource
@@ -12,6 +12,10 @@ from remotables.models import ContentResource
 
 class PersonCrudTest():
     pass
+
+class PersonModelMethods(TestCase):
+    pass
+
 
 class PersonAPICrudTest(APICRUDTest):
 
@@ -184,6 +188,15 @@ class PersonAPICrudTest(APICRUDTest):
             #try to associate c with a different existing person
             r=self.client.post(url,data=d,format='json')
             self.assertEqual(r.status_code,status.HTTP_409_CONFLICT)
+        
+        with self.subTest('Url'):
+            upat=UrlPattern(website=w,pattern='^(?:https?:\/\/)?(?:www\.)?(?:twitter\.com\/){1,2}@?([^\/]+)\/?$')
+            upat.save()
+            d={'urls':'http://www.twitter.com/username'}
+            r=self.client.post(url,data=d,format='json')
+            self.assertEqual(r.status_code,status.HTTP_201_CREATED)
+            #TODO check it got into DB, but I use this live so I'm pretty sure it does
+            
     # def testPersonAddDistinguish(self):
     #     with self.subTest("Success"):
     #         raise NotImplementedError()
