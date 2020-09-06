@@ -44,6 +44,11 @@ class Title(models.Model):
     language = models.ForeignKey("sharedstrings.Language",on_delete=models.SET_NULL,null=True,related_name="+")
     creative_work= models.ForeignKey("CreativeWork",on_delete=models.CASCADE,related_name="localized_titles")
 
+    class Meta:
+        unique_together=[
+            ['name','language','creative_work']
+        ]
+
 class CreativeWork(semantictags.Taggable):
 
     DATE_PRECISION_YEAR='y'
