@@ -375,7 +375,7 @@ class WebsiteViewSet(viewsets.ModelViewSet):
             lnumbers=map(lambda x: x.number,number_set)
             lnames.extend(lnumbers)
         
-        if format == "txt" and not 'owners' in request.GET:
+        if request.accepted_renderer.format == "txt" and not 'owners' in request.GET:
             #BUG this breaks if names and numbers are mixed 
             lnames= "\n".join(lnames)
 
