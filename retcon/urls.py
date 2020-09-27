@@ -14,13 +14,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path,include
+from django.urls import path,include,re_path
 from rest_framework import routers
 from rest_framework.authtoken import views
 import retconpeople.api,sharedstrings.api,semantictags.api,retconstorage.api,retconcreatives.api
 
 
-class OptionalSlashRouter(routers.SimpleRouter):
+class OptionalSlashRouter(routers.DefaultRouter):
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
@@ -44,6 +44,12 @@ router.register(r'company', retconcreatives.api.CompanyViewSet)
 router.register(r'episode', retconcreatives.api.EpisodeViewSet,basename='episode')
 router.register(r'series', retconcreatives.api.SeriesViewSet,basename='series')
 
+# from django.conf.urls.static import static
+from django.shortcuts import redirect,render
+
+from django.conf import settings
+
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -52,5 +58,14 @@ urlpatterns = [
     path('api-token-auth/', views.obtain_auth_token),
     path('admin/doc/', include('django.contrib.admindocs.urls')),
     path('creatives/', include('retconcreatives.urls')),
-    path('files/', include('retconstorage.urls'))
+    path('files/', include('retconstorage.urls')),
+    re_path(r'app/.*', lambda request: render(request, 'index.html')),
+    path(r'', lambda request: render(request, 'landing.html')),
+    # re_path(r'app/.+', lambda request: redirect('/app'))
 ]
+
+
+
+# urlpatterns += static(r'/app/', document_root='retcon/static/main')
+    # urlpatterns += static('/images/', document_root='app_root/path/to/images/')
+    # urlpatterns += static('/js/', document_root='app_root/path/to/js/')
