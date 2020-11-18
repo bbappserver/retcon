@@ -27,9 +27,9 @@ class RetconModelViewSet(viewsets.ModelViewSet):
                 #If we fail on get then we will drop out of the transaction and we can report malformed
 
                 if request.method == 'POST':
-                    self._existing_item_add_handler(rd, subordinate_type, subordinate_field, master)
+                    ret = self._existing_item_add_handler(rd, subordinate_type, subordinate_field, master)
                 elif request.method == 'DELETE':
-                    self._existing_item_delete_handler(rd, subordinate_type, subordinate_field, master)
+                    ret = self._existing_item_delete_handler(rd, subordinate_type, subordinate_field, master)
                 # else:
                 #     return response.Response({'status':'fail','message':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
