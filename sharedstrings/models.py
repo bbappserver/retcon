@@ -165,6 +165,8 @@ class SharedStringField(models.ForeignKey):
     def get_lookup(self, lookup_name):
         if lookup_name == 'icontains':
             return SurrogateIContainsStringLookup
+        if lookup_name == 'istartswith':
+            return SurrogateIStartsWithStringLookup
         if lookup_name == 'iexact':
             return SurrogateIExactStringLookup
         if lookup_name == 'contains':
@@ -185,6 +187,15 @@ class SurrogateIContainsStringLookup(models.lookups.In):
         return super().__init__(lhs,rhs,*kwargs)
 
     lookup_name = 'icontains'
+
+class SurrogateIStartsWithStringLookup(models.lookups.In):
+    
+    def __init__(self,lhs,rhs, *kwargs):
+        self.params=[]
+        rhs= [x.id for x in Strings.objects.filter(name__istartswith=rhs).distinct()]
+        return super().__init__(lhs,rhs,*kwargs)
+
+    lookup_name = 'istartswith'
 
 class SurrogateIExactStringLookup(models.lookups.In):
     
