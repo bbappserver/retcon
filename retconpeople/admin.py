@@ -33,7 +33,7 @@ class UrlPatternInline(admin.TabularInline):
 class PersonAdmin(admin.ModelAdmin):
     exclude=("external_representations",)
     search_fields=['first_name','last_name','pseudonyms']
-    list_display=["id","formatted_name","description","wanted_id_count"]
+    list_display=["id","formatted_name",'first_name','last_name','pseudonyms_readonly',"description","wanted_id_count"]
     list_filter=[]
     autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","distinguish_from"]
     raw_id_fields=('merged_into',)

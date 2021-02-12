@@ -114,6 +114,9 @@ class Person(models.Model):
     external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
     canonicalize=False
 
+    @property
+    def pseudonyms_readonly(self):
+        return ",".join([x.name for x in self.pseudonyms.all()])
     def get_usernames(self):
         raise NotImplementedError()
         l=[]
