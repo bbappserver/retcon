@@ -189,12 +189,12 @@ class Person(models.Model):
                     #This happens for a currently unknown reason
                     if self.pseudonyms.count()>0:
                         o= self.pseudonyms.all()[0]
-                        return o.name.name
+                        return o.name
                     else:
                         un=self.usernames
                         if un.count()>0:
-                            u=un[0]
-                            o=un.name
+                            u=un.all()[0]
+                            o=u.name
                             return o.name
                     # return 'debug name formate error'
                 except:
