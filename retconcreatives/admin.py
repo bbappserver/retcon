@@ -9,6 +9,13 @@ class ExternalContentInline(admin.TabularInline):
     verbose_name_plural="External URLs"
     autocomplete_fields=["contentresource"]
 
+class CompanyExternalContentInline(admin.TabularInline):
+    model=Company.external_representations.through
+    extra=1
+    verbose_name="External URL"
+    verbose_name_plural="External URLs"
+    autocomplete_fields=["contentresource"]
+
 class FilesInline(admin.TabularInline):
     model=CreativeWork.files.through
     extra=1
@@ -81,6 +88,7 @@ class CompanyAdmin(admin.ModelAdmin):
     list_display=['name','defunct','parent','website']
     list_editable=['defunct','parent','website']
     list_filter=['defunct']
+    inlines=(CompanyExternalContentInline,)
     #allowing sort by name actually sorts on shadredsting_id which is wrong, but the model's default ordering is correct
     sortable_by=['defunct','parent','website'] 
     exclude=["external_representations"]
