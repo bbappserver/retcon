@@ -10,11 +10,17 @@ class ImageSequenceCompareTest(TestCase):
 
     basedir=os.path.dirname(__file__)
 
+    def setUp(self):
+        path=os.path.join(self.basedir, 'test/')
+        self.do_file_tests=os.path.exists(path)
+        return super().setUp()
+
     def testLoadStilImage(self):
         path=os.path.join(self.basedir, 'test/big*.jpg')
         l=glob(path)
         if len(l)==0:
-            raise NotImplementedError("test data not found jpg")
+            self.skipTest("test data not found jpg")
+            raise NotImplementedError()
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_STILL_IMAGE)
@@ -25,7 +31,7 @@ class ImageSequenceCompareTest(TestCase):
         path=os.path.join(self.basedir, 'test/big*.gif')
         l=glob(path)
         if len(l)==0:
-            raise NotImplementedError("test data not found GIF")
+            self.skipTest("test data not found GIF")
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_GIF)
@@ -36,7 +42,7 @@ class ImageSequenceCompareTest(TestCase):
         path=os.path.join(self.basedir, 'test/big*.mp4')
         l=glob(path)
         if len(l)==0:
-            raise NotImplementedError("test data not found mp4")
+            self.skipTest("test data not found mp4")
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
@@ -47,7 +53,7 @@ class ImageSequenceCompareTest(TestCase):
         path=os.path.join(self.basedir, 'test/big*.avi')
         l=glob(path)
         if len(l)==0:
-            raise NotImplementedError("test data not found avi")
+            self.skipTest("test data not found avi")
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
@@ -58,7 +64,7 @@ class ImageSequenceCompareTest(TestCase):
         path=os.path.join(self.basedir, 'test/big*.wmv')
         l=glob(path)
         if len(l)==0:
-            raise NotImplementedError("test data not found wmv")
+            self.skipTest("test data not found wmv")
         for p in l:
             with self.subTest("load "+p):
                 seq=ImageSequenceSource(p,ImageSequenceSource.SEQUENCE_TYPE_VIDEO)
@@ -95,6 +101,8 @@ class ImageSequenceCompareTest(TestCase):
             self.assertFalse(fa is fb,"Two image sequences must not return the same underlying object per frame")
             self.assertTrue(np.array_equal(fa,fb),"Frames should always match for identical video streams")
 
+
+    @skip("Only needed to prove that iterating two video sequences works, but its long so skip it if this is working.")
     def testCompareVideoToShrink(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
         pb=os.path.join(self.basedir, 'test/bigbuckclippedshrink.mp4')
@@ -108,6 +116,7 @@ class ImageSequenceCompareTest(TestCase):
 
 
 
+    @skip("Only needed to prove that iterating two video sequences works, but its long so skip it if this is working.")
     def testCompareVideoToShrinkClipped(self):
         pa=os.path.join(self.basedir, 'test/bigbuckclipped.mp4')
         pb=os.path.join(self.basedir, 'test/bigbuckclippedshrinkcut.mp4')
