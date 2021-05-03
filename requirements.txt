@@ -3,4 +3,4 @@ djangorestframework==3.10.3
 filetype
 requests
 python-dateutil
-pillow==7.2.0
+pillow==8.1.1
