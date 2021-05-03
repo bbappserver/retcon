@@ -149,6 +149,18 @@ class Series(CreativeWork):
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES,null=True,blank=True)
 
     #finished_publication= models.BooleanField(null=True,blank=True)
+
+    @classmethod
+    def search(cls,name,company_name=None):
+        # if company_name is not None:
+        #     cl= Company.objects.filter(name__name__icontains=company_name)
+        #     for c in cl:
+        #         cls.objects.filter(name__icontains=name,published_by)
+        
+        direct_titles= cls.objects.filter(name__icontains=name)
+        alt_titles= {cls.objects.get(creative_work_id=x) for x.creative_work_id in Title.objects.filter(name__icontains=name)}
+        return set( direct_titles).union(alt_titles)
+
     
 
     def __str__(self):
