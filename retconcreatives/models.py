@@ -73,8 +73,8 @@ class CreativeWork(semantictags.Taggable):
     def local_name(self,language=django.utils.translation.get_language()):
         try:
             short_code=language[:2]
-            return Title.objects.get(language__isocode=short_code,creative_work=self).name
-        except django.core.exceptions.ObjectDoesNotExist:
+            return Title.objects.filter(language__isocode=short_code,creative_work=self)[0].name
+        except:
             return None
     
     def preferred_name(self,language=django.utils.translation.get_language()):
