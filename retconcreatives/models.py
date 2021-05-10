@@ -168,6 +168,9 @@ class Series(CreativeWork):
             return "{}({})".format(self.preferred_name(),self.published_on.year)
         else:
             return "{}(Unknown Year)".format(self.preferred_name(),)
+
+    def episodes_human_readable(self):
+        return "\n".join(str(x) for x in self.episodes.all())
     
     def save(self, *args, **kwargs):
 
