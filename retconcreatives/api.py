@@ -7,6 +7,7 @@ from sharedstrings.models import Strings
 from sharedstrings.api import StringsField
 from semantictags.api import TaggableViewsetMixin,TaggableSerializerMixin
 from retconstorage.models import ManagedFile
+from retconstorage.api import ManagedFileSerializer
 from rest_framework import serializers,viewsets,status,response
 from rest_framework.decorators import action,renderer_classes
 from django.db import transaction
@@ -91,7 +92,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
     #         return Response(serializer.data,status=404)
 
 class CreativeWorkSerializerMixin(TaggableSerializerMixin):
-    files= serializers.SlugRelatedField(many=True,slug_field="sha256",read_only=True,style={'base_template': 'input.html'})
+    files= ManagedFileSerializer(required=False,many=True,read_only=False,style={'base_template': 'input.html'})
     
     external_representations = ContentResourceSerializer(required=False,allow_null=False,many=True,
     #view_name='company-detail',
@@ -200,8 +201,9 @@ class SeriesSerializer(CreativeWorkSerializerMixin):
                 series.external_representations.add(res)
             try:
                 for x in files:
-                    b=bytes.fromhex(x)
-                    o=ManagedFile.objects.get_or_create(sha256=x)
+#                    b=bytes.fromhex(x)
+                    o,created=ManagedFile.objects.get_or_create(**x)
+                    o.save()
                     series.files.add(o)
             except ManagedFile.DoesNotExist as e:
                 return response.Response({'status':'fail','message':'None existant file','data':x},status=status.HTTP_428_PRECONDITION_REQUIRED)

@@ -58,8 +58,11 @@ class ManagedFileAdmin(admin.ModelAdmin):
         return ['strnames']
     def get_search_results(self, request, queryset, search_term):
         #queryset, use_distinct = super().get_search_results(request, queryset, search_term)
-        search_term=bytes.fromhex(search_term)
-        queryset=ManagedFile.objects.filter(sha256=search_term)
+        if len(search_term) ==0:
+            queryset=ManagedFile.objects.all()
+        else:
+            search_term=bytes.fromhex(search_term)
+            queryset=ManagedFile.objects.filter(sha256=search_term)
         return queryset,True
 
 

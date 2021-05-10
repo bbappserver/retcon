@@ -18,23 +18,23 @@ class FileAPITest(APICRUDTest):
             d={'md5':'1234',
             'sha256':'1234'
             }
-            self.client.post('/API/file_id.json',d)
-        with self.subTest("With upload"):
-            blob='x'*(4<<20)
-            self.client.post('/API/file/upload',data=blob)
-            #compute hashes
-            #track file
-            #test contents and expected hash
+        #    self.client.post('/API/file_id.json',d)
+        # with self.subTest("With upload"):
+        #     blob='x'*(4<<20)
+        #     self.client.post('/API/file/upload',data=blob)
+        #     #compute hashes
+        #     #track file
+        #     #test contents and expected hash
 
-            #Now do it a gain with a file that exists
-            self.client.post('/API/file/upload',data=blob)
-            #compute hashes
-            #track file
-            #test contents and expected hash
+        #     #Now do it a gain with a file that exists
+        #     self.client.post('/API/file/upload',data=blob)
+        #     #compute hashes
+        #     #track file
+        #     #test contents and expected hash
 
-            #erase file
-            raise NotImplementedError()
+        #     #erase file
+        #     raise NotImplementedError()
     
-    def testRetrieveManagedFile(self):
-        raise NotImplementedError()
+    # def testRetrieveManagedFile(self):
+    #     raise NotImplementedError()
 

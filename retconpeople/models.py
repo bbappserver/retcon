@@ -114,6 +114,9 @@ class Person(models.Model):
     external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
     canonicalize=False
 
+    @property
+    def pseudonyms_readonly(self):
+        return ",".join([x.name for x in self.pseudonyms.all()])
     def get_usernames(self):
         raise NotImplementedError()
         l=[]
@@ -182,17 +185,20 @@ class Person(models.Model):
                 return self.first_name  
             else:
                 try:
+                    #This occasionally causes crashes by infintie recursion when the debugger request formatting
+                    #This happens for a currently unknown reason
                     if self.pseudonyms.count()>0:
                         o= self.pseudonyms.all()[0]
                         return o.name
-                except:
-                    try:
+                    else:
                         un=self.usernames
-                        u=un[0]
-                        o=un.name.get()
-                        return o.name
-                    except:
-                        return "?"
+                        if un.count()>0:
+                            u=un.all()[0]
+                            o=u.name
+                            return o.name
+                    # return 'debug name formate error'
+                except:
+                    return "?"
         else:
             if self.first_name is not None:
                 if shorten:
@@ -236,11 +242,27 @@ class Person(models.Model):
             person_partial=False
             with transaction.atomic():
                 name_sites=list(cls.urls_to_name_site_pair(urls))
-                name_sites.extend(user_identifiers)
+
+                for x in user_identifiers:
+                    if isinstance(x,dict):
+                        #unpack dictionary form
+                        try:
+                            t=(x['name'],x['domain'])
+                            name_sites.append(t)
+                        except KeyError:
+                            raise ValueError('Malformed user_identifiers')
+                    else:
+                        #(name,domain) form
+                        name_sites.append(x)
+                if len(name_sites)==0:
+                    return False
+                #Check if there is an existing person with any of these ids
                 pid = cls.search_by_identifiers(urls=[],user_identifiers=name_sites,expect_single=True)
                 if len(pid)>0:
+                    #if there is unpack them
                     pid=pid[0]
                 else:
+                    #if there isn't create a new one
                     person_created=True
                     pid=Person()
                     pid.save()
@@ -311,7 +333,12 @@ class Person(models.Model):
         identities=set()
         names=set()
 
-        for name,domain_name in user_identifiers:
+        for x in user_identifiers:
+            if isinstance(x,dict):
+                name = x['name']
+                domain_name = x['domain']
+            else:
+                name,domain_name=x
             try:
                 try:
                     name=int(name)
@@ -321,11 +348,13 @@ class Person(models.Model):
                         un=UserNumber.objects.get(number=name,website__domain=domain_name)
                 except ValueError:
                     if isinstance(domain_name,Website):
-                        un=UserName.objects.get(name__name__ieq=name,website=domain_name)
+                        un=UserName.objects.get(name__name__iexact=name,website=domain_name)
                     else:
-                        un=UserName.objects.get(name__name__ieq=name,website__domain=domain_name)
-            except ObjectDoesNotExist:
+                        un=UserName.objects.get(name__name__iexact=name,website__domain=domain_name)
+            except UserNumber.DoesNotExist:
                 #Found no such pair
+                continue
+            except UserName.DoesNotExist:
                 continue
 
             identities.add(un.belongs_to)
@@ -356,7 +385,7 @@ class Person(models.Model):
                             pass
                     except ValueError:
                         try:
-                            un=UserName.objects.get(name__name__ieq=name,website=p.website)
+                            un=UserName.objects.get(name__name__iexact=name,website=p.website)
                             identities.add(un.belongs_to)
                         except ObjectDoesNotExist:
                             #The regex matched, but no identity,keep looking at the other urls

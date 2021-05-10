@@ -33,9 +33,10 @@ class UrlPatternInline(admin.TabularInline):
 class PersonAdmin(admin.ModelAdmin):
     exclude=("external_representations",)
     search_fields=['first_name','last_name','pseudonyms']
-    list_display=["id","formatted_name","description","wanted_id_count"]
+    list_display=["id",'formatted_name','pseudonyms_readonly','first_name','last_name',"description","wanted_id_count"]
     list_filter=[]
-    autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","merged_into","distinguish_from"]
+    autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","distinguish_from"]
+    raw_id_fields=('merged_into',)
     readonly_fields = ('uuid',)
     
     inlines = [
@@ -56,11 +57,14 @@ class PersonAdmin(admin.ModelAdmin):
         q=Q(first_name__name__istartswith=search_term) | Q(last_name__name__istartswith=search_term)
         q1=Person.objects.filter(q)
         q2=Person.objects.filter(pseudonyms__name__icontains=search_term)
-        q3=Person.objects.filter(usernames__name__name__istartswith=search_term)
+
+        if len(search_term)<3:
+            q3=Person.objects.filter(usernames__name__name__istartswith=search_term)
+        else:
+            q3=Person.objects.filter(usernames__name__name__icontains=search_term)
         return (q1 | q2 |q3 ,True)
         # return super().get_search_results(request, queryset, search_term)
 
-    pass
 
 @admin.register(Website)
 class WebsiteAdmin(admin.ModelAdmin):
@@ -68,6 +72,7 @@ class WebsiteAdmin(admin.ModelAdmin):
     autocomplete_fields=["tld","tags","name","parent_site"]
     list_display=["id","domain","parent_site_name","brief","user_id_format_string","tld"]
     #list_filter=["tld"] #TODO doesn't work because options include all shared strings
+    readonly_fields=['tld']
     exclude=["user_id_patterns"]
     ordering=['domain']
     inlines=[UrlPatternInline]

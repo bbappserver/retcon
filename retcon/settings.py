@@ -83,7 +83,7 @@ INSTALLED_APPS = [
     'retconcreatives',
     'remotables',
     'retconstorage',
-    'retconposts',
+    'retcon'
 ]
 
 MIDDLEWARE = [

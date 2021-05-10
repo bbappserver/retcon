@@ -16,7 +16,7 @@ def create_series(d, parent):
         s.save()
         return s
 
-class SeriesEpisodeCRUDTestCase(TestCase):
+class SeriesCRUDTestCase(TestCase):
 
     def setUp(self):
         d={
@@ -91,7 +91,7 @@ class SeriesEpisodeCRUDTestCase(TestCase):
 
     
 
-class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
+class SeriesAPICRUDTestCase(APICRUDTest):
     
     
     def default_child(self):
@@ -173,7 +173,7 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         self.assertEqual(response.status_code,status.HTTP_200_OK,msg=response.content)
 
         rd=response.json()
-        self.assertCoverFilteredDict(d,rd,['id'])
+        self.assertCoverFilteredDict(d,rd,['id','files'])
         for x in rd['files']:
             self.assertEqual(x['sha256'],hexstr)
     
@@ -216,7 +216,10 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
         s=Series.objects.get(id=id)
         self.assertEqual( s.produced_by.count(),0)
 
-        
+    # def test_update_various_fields(self):
+    #     d={}#fields to update here
+    #     raise NotImplementedError()
+    #     self.put('/api/series/{}',data=d,format='json') 
 
     
     #TODO all wrong, creation should be with primary keys only for most subordinate resources.
@@ -326,4 +329,29 @@ class SeriesEpisodeAPICRUDTestCase(APICRUDTest):
             o=Person(**d)
             o.save()
             yield o
-        
+
+class EpisodeCRUDTestCase(TestCase):
+    pass
+
+class CharacterCRUDTestCase(TestCase):
+    pass
+
+class TitleCRUDTestCase(TestCase):
+    pass
+
+class EpisodeAPICRUDTestCase(APICRUDTest):
+    
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(user=self.superUser)
+
+    def test_create_episode(self):
+        pass
+        #create series
+        #create episode as part of that series
+        # part_of=models.ForeignKey("Series",on_delete=models.PROTECT,null=True,blank=True,related_name='episodes')
+        # order_in_series=models.PositiveSmallIntegerField(null=True,blank=True)
+        # description = models.TextField(null=True,blank=True)
+        # medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
+        # titles
+        # portrayls
