@@ -102,6 +102,7 @@ class Person(models.Model):
     id = models.AutoField(primary_key=True)
     first_name=sharedstrings.SharedStringField(blank=True,null=True)
     last_name=sharedstrings.SharedStringField()
+    middle_names=models.CharField(max_length=64,blank=True,null=True)
     pseudonyms = models.ManyToManyField("sharedstrings.Strings",related_name="+",blank=True)
     description=models.CharField(max_length=512,blank=True)
     merged_into=models.ForeignKey("self",related_name="merged_from",on_delete=models.DO_NOTHING,null=True,blank=True)
