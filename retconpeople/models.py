@@ -113,6 +113,11 @@ class Person(models.Model):
     uuid=models.UUIDField(default=uuid.uuid4,blank=True,unique=True)
 
     external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
+    
+    solo_photos=models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
+    in_photos=models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
+    potentially_in_photos=models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
+
     canonicalize=False
 
     @property

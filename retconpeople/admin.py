@@ -31,7 +31,7 @@ class UrlPatternInline(admin.TabularInline):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    exclude=("external_representations",)
+    exclude=("external_representations",'solo_photos','potentially_in_photos','in_photos')
     search_fields=['first_name','last_name','pseudonyms']
     list_display=["id",'formatted_name','pseudonyms_readonly','first_name','last_name',"description","wanted_id_count"]
     list_filter=[]
