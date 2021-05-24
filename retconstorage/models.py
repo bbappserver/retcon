@@ -145,7 +145,7 @@ class ManagedFile(models.Model):
         if not unsafe_modification and is_update:
             unsafe_fields=[]
             for f in self._write_once_fields:
-                if self._field_has_changed(f) and not slef._field_was_none(f):
+                if self._field_was_changed(f) and not self._field_was_none(f):
                     unsafe_fields.append(f)
             if unsafe_fields:
                 raise IntegrityError("The non-null fields {} cannot be modified.".format(unsafe_fields)) 

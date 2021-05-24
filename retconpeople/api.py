@@ -180,6 +180,9 @@ class PersonViewSet(RetconModelViewSet):
         d=request.data
         urls = d['urls'] if 'urls' in d else []
         identifiers = d['identifiers'] if 'identifiers' in d else []
+        #autocorrect a single url into a list
+        if not isinstance(urls,list):
+            urls=[urls]
         l=Person.search_by_identifiers(urls=urls,user_identifiers=identifiers)
         serializer=PersonSerializer(l,many=True)
         if len(l)>0:

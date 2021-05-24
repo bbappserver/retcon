@@ -73,8 +73,8 @@ class CreativeWork(semantictags.Taggable):
     def local_name(self,language=django.utils.translation.get_language()):
         try:
             short_code=language[:2]
-            return Title.objects.get(language__isocode=short_code,creative_work=self).name
-        except django.core.exceptions.ObjectDoesNotExist:
+            return Title.objects.filter(language__isocode=short_code,creative_work=self)[0].name
+        except:
             return None
     
     def preferred_name(self,language=django.utils.translation.get_language()):
@@ -149,6 +149,18 @@ class Series(CreativeWork):
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES,null=True,blank=True)
 
     #finished_publication= models.BooleanField(null=True,blank=True)
+
+    @classmethod
+    def search(cls,name,company_name=None):
+        # if company_name is not None:
+        #     cl= Company.objects.filter(name__name__icontains=company_name)
+        #     for c in cl:
+        #         cls.objects.filter(name__icontains=name,published_by)
+        
+        direct_titles= cls.objects.filter(name__icontains=name)
+        alt_titles= {cls.objects.get(creative_work_id=x) for x.creative_work_id in Title.objects.filter(name__icontains=name)}
+        return set( direct_titles).union(alt_titles)
+
     
 
     def __str__(self):
@@ -156,6 +168,9 @@ class Series(CreativeWork):
             return "{}({})".format(self.preferred_name(),self.published_on.year)
         else:
             return "{}(Unknown Year)".format(self.preferred_name(),)
+
+    def episodes_human_readable(self):
+        return "\n".join(str(x) for x in self.episodes.all())
     
     def save(self, *args, **kwargs):
 

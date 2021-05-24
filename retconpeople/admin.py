@@ -72,6 +72,7 @@ class WebsiteAdmin(admin.ModelAdmin):
     autocomplete_fields=["tld","tags","name","parent_site"]
     list_display=["id","domain","parent_site_name","brief","user_id_format_string","tld"]
     #list_filter=["tld"] #TODO doesn't work because options include all shared strings
+    readonly_fields=['tld']
     exclude=["user_id_patterns"]
     ordering=['domain']
     inlines=[UrlPatternInline]

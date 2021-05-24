@@ -53,7 +53,7 @@ class GenreAdmin(admin.ModelAdmin):
 class SeriesAdmin(admin.ModelAdmin):
     search_fields=['name']
     autocomplete_fields=['tags','ambiguous_tags','produced_by','published_by','created_by','parent_series']
-    #readonly_fields = ('related_from_series',)
+    readonly_fields = ('episodes_human_readable',)
     exclude=["external_representations","files"]
     inlines=(RelatedSeriesInline,LocalizedTitleInline,ExternalContentInline,FilesInline)
 

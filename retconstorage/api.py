@@ -56,9 +56,18 @@ class NamedFileViewSet(viewsets.ModelViewSet):
     #         return Response(serializer.data,status=200)
     #     else:
     #         return Response(serializer.data,status=404)
+class HexBinField(serializers.CharField):
+    """
+    Color objects are serialized into 'rgb(#, #, #)' notation.
+    """
+    def to_representation(self, value):
+        return value.hex()
+    def to_internal_value(self, data):
+        return bytes.fromhex(data)
 
 class ManagedFileSerializer(serializers.ModelSerializer):
-
+        md5=HexBinField(required=False)
+        sha256=HexBinField(required=False)
         class Meta:
             model = ManagedFile
             fields = ['id','md5','sha256']

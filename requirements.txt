@@ -1,6 +1,6 @@
-Django==2.2.15
-djangorestframework==3.10.3
+Django==2.2.20
+djangorestframework==3.11.2
 filetype
 requests
 python-dateutil
-pillow==7.2.0
+pillow==8.1.1
