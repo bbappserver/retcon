@@ -12,6 +12,8 @@ from django.shortcuts import redirect,get_object_or_404
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 import json
 
 from rest_framework import renderers
@@ -174,6 +176,10 @@ class PersonViewSet(RetconModelViewSet):
         serializer = PersonSerializer(user,context={'request': request})
         return Response(serializer.data)
     
+    @method_decorator(cache_page(20))
+    def list(self,request,*args,**kwargs):
+        return super().list(request,*args,**kwargs)
+    
     
     @action(detail=False, methods=['get','post'])
     def search(self, request, pk=None,format=None):
@@ -328,6 +334,21 @@ class PersonViewSet(RetconModelViewSet):
     # @action(detail=True, methods=['get','post','delete'])
     # def distinguish_from(self, request, pk=None,format=None):
     #     raise NotImplementedError()
+
+    def _request_to_filter_dict(self,d):
+        return d
+
+    def _filter_objects(self, filter_dict):
+        try:
+            return [Person.get(uuid=filter_dict['uuid'])]
+        except:
+                    #idp=Person.search_by_identifiers()
+            psn = Person.get_with_psudonyms(filter_dict['pseudonyms'])
+            psfl = Person.filter(first_name_id=filter_dict['first_name'],last_name_id=filter_dict['last_name'])
+            return psn|psfl
+
+
+
 
             
 

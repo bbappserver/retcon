@@ -4,3 +4,4 @@ filetype
 requests
 python-dateutil
 pillow==8.1.1
+django-cors-headers

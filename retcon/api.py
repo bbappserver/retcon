@@ -2,6 +2,8 @@ from rest_framework import serializers,viewsets,status,response
 from rest_framework.decorators import action,renderer_classes
 from django.db import transaction
 from django.conf import settings
+from sharedstrings.models import Strings
+import django.db.models.fields.related as rf
 
 
 class RetconModelViewSet(viewsets.ModelViewSet):
@@ -122,4 +124,53 @@ class RetconModelViewSet(viewsets.ModelViewSet):
         else:
             ret= response.Response({'status':'fail','message':'One or more of the requested objects to be removed did not exist.'},status=status.HTTP_428_PRECONDITION_REQUIRED)
         return ret
+
+    def _request_to_filter_dict(self,d):
+        '''
+        Subclasses must implement this method to support filtering.
+        Converts a requests dicitonary to input for Model.queryset.filter(**d)
+
+        :returns: null if result would find no items (for eaxmple not found foreign item), else a dict for queryset
+        '''
+
+        # for k in d:
+        #     if isinstance(k[d],dict):
+        #         #foreign key
+        #         elif isinstance(k[d],list):
+        #             #many to many
+        # field_spec=self.serializer_class.Meta.model._meta.get_fields()
+        # for f in field_spec:
+        #     if f in d:
+        #         if isinstance(f,rf.ManyToManyRel):
+        #             #m2m
+        #             subordinates=f.related_model.filter(d[f.field_name])
+        #         elif isinstance(f,rf.ManyToOneRel):
+        #             subordinate=f.related_model.get(d[f.field_name])
+                #fk
+            # elif isinstance(f,rf.ForeignKey):
+
+
+        raise NotImplementedError('This view needs to implement _request_to_filter_dict to support the filter action')
+    
+    def _filter_objects(self,filter_dict):
+        '''
+        The object set retured by the filter(self,request), 
+        by default just calls get_queryset().filter(**filter_dict)
+
+        Override for more sophisticated query behaviour.
+        '''
+        return self.get_queryset().filter(**d)
+    
+    def _substitute_fk_for_shared_string(self,shared_string):
+        return Strings.objects.get(name=shared_string)
+
+    @action(methods=['POST','GET'],detail=False)
+    def filter(self,request):
+        d=self._request_to_filter_dict(request.data)
+        if d is None:
+            return []
+        return self.get_paginated_response(self._filter_objects(d))
+
+
+
 
