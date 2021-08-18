@@ -9,7 +9,7 @@ class NamedFileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NamedFile
-        fields = ['id','name']
+        fields = ['id','name','identity']
     
 
 class NamedFileViewSet(viewsets.ModelViewSet):
@@ -34,6 +34,15 @@ class NamedFileViewSet(viewsets.ModelViewSet):
         term=request.query_params.get('istartswith',None)
         if term:
             queryset=queryset.filter(name__istartswith=term)
+        
+        term=request.query_params.get('identityid',None)
+       
+        if term:
+            try:
+                term=int(term)
+                queryset=queryset.filter(identity_id=term)
+            except:
+                return Response({'status':'error','message':'identityid must be integer'},status=status.HTTP_400_BAD_REQUEST)
 
         page = self.paginate_queryset(queryset)
         if page is not None:

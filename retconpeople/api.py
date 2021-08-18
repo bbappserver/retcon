@@ -176,7 +176,7 @@ class PersonViewSet(RetconModelViewSet):
         serializer = PersonSerializer(user,context={'request': request})
         return Response(serializer.data)
     
-    @method_decorator(cache_page(20))
+    @method_decorator(cache_page(45))
     def list(self,request,*args,**kwargs):
         return super().list(request,*args,**kwargs)
     

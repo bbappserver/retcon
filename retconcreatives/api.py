@@ -143,12 +143,41 @@ class EpisodeSerializer(CreativeWorkSerializerMixin):
         exclude = []
     
 
+
 class EpisodeViewSet(CreativeWorkViewsetMixin):
     """
     API endpoint that allows Episodes to be viewed or edited.
     """
     queryset = Episode.objects.all()
     serializer_class = EpisodeSerializer
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        term=request.query_params.get('icontains',None)
+        if term:
+            queryset=queryset.filter(name__icontains=term)
+        
+        term=request.query_params.get('istartswith',None)
+        if term:
+            queryset=queryset.filter(name__istartswith=term)
+        
+        term=request.query_params.get('fileid',None)      
+        if term:
+            try:
+                term=int(term)
+                queryset=queryset.filter(files__in=[term])
+            except:
+                return Response({'status':'error','message':'identityid must be integer'},status=status.HTTP_400_BAD_REQUEST)
+                
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return response.Response(serializer.data)
+    
 
 class SeriesSerializer(CreativeWorkSerializerMixin):
     
