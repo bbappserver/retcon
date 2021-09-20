@@ -23,7 +23,6 @@ class Company(semantictags.Taggable):
     case_sensitive_name = models.BooleanField(null=False,blank=False,default=False)
 
     parent=models.ForeignKey("self",on_delete=models.PROTECT,null=True,blank=True,related_name="children")
-    website = models.ForeignKey("retconpeople.Website",on_delete=models.PROTECT,null=True,blank=True)
     defunct = models.BooleanField(null=True,blank=True)
     external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
 
@@ -111,6 +110,11 @@ class CreativeWork(semantictags.Taggable):
     #         models.CheckConstraint(check=(models.Q(published_on=None, published_on_precision=None)|models.Q(published_on__isnull=False,published_on_precision__isnull=False)), name='date_and_precision'),
     #     ]
 
+# class UniformResourceIdentifierNamespace(models.model):
+#     name=models.TextField()
+# class UniformResourceIdentifier(models.model):
+#     identifier = models.TextField()
+#     namespace = models.ForeignKey("UniformResourceIdentifierNamespace")
 
 class Series(CreativeWork):
 
@@ -235,6 +239,7 @@ class Episode(CreativeWork):
     order_in_series=models.PositiveSmallIntegerField(null=True,blank=True)
     description = models.TextField(null=True,blank=True)
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
+
 
     #cover_images= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
     #promotional_images= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)

@@ -35,6 +35,7 @@ class Website(models.Model):
     #A domain should consist only of tld and name not subdomain
     name = sharedstrings.SharedStringField()
     tld = sharedstrings.SharedStringField()
+    owner = models.ForeignKey("retconcreatives.Company",on_delete=models.PROTECT,null=True,blank=True,related_name="websites")
     user_id_format_string = models.CharField(max_length=1024,null=True,blank=True)
     description=models.CharField(max_length=255)
     tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)

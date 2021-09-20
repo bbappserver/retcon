@@ -69,7 +69,7 @@ class PersonAdmin(admin.ModelAdmin):
 @admin.register(Website)
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
-    autocomplete_fields=["tld","tags","name","parent_site"]
+    autocomplete_fields=["tld","tags","name","parent_site","owner"]
     list_display=["id","domain","parent_site_name","brief","user_id_format_string","tld"]
     #list_filter=["tld"] #TODO doesn't work because options include all shared strings
     readonly_fields=['tld']

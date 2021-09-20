@@ -83,14 +83,14 @@ class EpisodeAdmin(TaggableAdminMixin):
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    autocomplete_fields=['name','tags','parent','ambiguous_tags','website']
-    search_fields=['name','website__name']
-    list_display=['name','defunct','parent','website']
-    list_editable=['defunct','parent','website']
+    autocomplete_fields=['name','tags','parent','ambiguous_tags',]
+    search_fields=['name',]
+    list_display=['name','defunct','parent',]
+    list_editable=['defunct','parent',]
     list_filter=['defunct']
     inlines=(CompanyExternalContentInline,)
     #allowing sort by name actually sorts on shadredsting_id which is wrong, but the model's default ordering is correct
-    sortable_by=['defunct','parent','website'] 
+    sortable_by=['defunct','parent',] 
     exclude=["external_representations"]
     pass
 
