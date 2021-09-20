@@ -7,6 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('retconpeople', '0031_auto_20210524_2336'),
+        ('retconstorage','0007_auto_20200612_2121')
     ]
 
     operations = [
