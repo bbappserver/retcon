@@ -400,8 +400,7 @@ class WebsiteViewSet(viewsets.ModelViewSet):
             lnames.extend(lnumbers)
         
         if request.accepted_renderer.format == "txt" and not 'owners' in request.GET:
-            #BUG this breaks if names and numbers are mixed 
-            lnames= "\n".join(lnames)
+            lnames= "\n".join((str(x) for x in lnames))
 
             return Response(lnames)
             
