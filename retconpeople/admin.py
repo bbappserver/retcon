@@ -2,6 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.db.models import Q
 from .models import UserName,UserNumber,Person,Website,UrlPattern
+from retconcreatives.admin import PortrayalInline
 # Register your models here.
 
 def merge_people(modeladmin, request, queryset):
@@ -9,6 +10,10 @@ def merge_people(modeladmin, request, queryset):
     pass
 merge_people.short_description = "Combine aliased people into the oldest one."
 
+class ReversePortraylInline(admin.TabularInline):
+    model=PortrayalInline.model
+    ordering=('episode__name',)
+    autocomplete_fields=('episode','role')
 class ExternalPersonContentInline(admin.TabularInline):
     model=Person.external_representations.through
     extra=1
@@ -40,7 +45,7 @@ class PersonAdmin(admin.ModelAdmin):
     readonly_fields = ('uuid',)
     
     inlines = [
-        UserNameInline,UserNumberInline,ExternalPersonContentInline
+        UserNameInline,UserNumberInline,ExternalPersonContentInline,ReversePortraylInline
     ]
     order_by=('last_name','first_name')
     description = forms.CharField( widget=forms.Textarea )
