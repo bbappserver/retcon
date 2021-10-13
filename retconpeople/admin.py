@@ -40,6 +40,7 @@ class PersonAdmin(admin.ModelAdmin):
     search_fields=['first_name','last_name','pseudonyms']
     list_display=["id",'formatted_name','pseudonyms_readonly','first_name','last_name',"description","wanted_id_count"]
     list_filter=[]
+    list_select_related=True
     autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","distinguish_from"]
     raw_id_fields=('merged_into',)
     readonly_fields = ('uuid',)
@@ -70,13 +71,22 @@ class PersonAdmin(admin.ModelAdmin):
         return (q1 | q2 |q3 ,True)
         # return super().get_search_results(request, queryset, search_term)
 
+class SortedTLDFieldListFilter(admin.RelatedOnlyFieldListFilter):
+    '''
+    Ideally should return TopLevl domains in sorted order but lookups is not called.
+    TODO:Figure out why this is broken
+    '''
+    def lookups(self, request, model_admin):
+        ls=super().lookups(request,queryset,model_admin)
+        return sorted(ls)
 
 @admin.register(Website)
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
     autocomplete_fields=["tld","tags","name","parent_site","owner"]
     list_display=["id","domain","parent_site_name","brief","user_id_format_string","tld"]
-    #list_filter=["tld"] #TODO doesn't work because options include all shared strings
+    list_filter=[["tld",SortedTLDFieldListFilter]] #TODO doesn't work because options include all shared strings
+    list_select_related=True
     readonly_fields=['tld']
     exclude=["user_id_patterns"]
     ordering=['domain']
@@ -87,12 +97,18 @@ class WebsiteAdmin(admin.ModelAdmin):
         return super().get_search_results(request, queryset, search_term)
 
     
+    
 # Handled by inlines, reinstate if new fields render it necessary to have these as an admin panel.
-# @admin.register(UserName)
-# class UserNameAdmin(admin.ModelAdmin):
-#     search_fields=["name"]
-#     autocomplete_fields=["tags","name","website","belongs_to"]
-#     pass
+@admin.register(UserName)
+class UserNameAdmin(admin.ModelAdmin):
+    search_fields=["name__name__icontains"]
+    autocomplete_fields=["tags","name","website","belongs_to"]
+    list_display=['name','website','wanted']
+    list_filter=["wanted",
+    ["website",admin.RelatedOnlyFieldListFilter]] #Only include actually related websites
+    list_editable=['wanted','website']
+    list_select_related=['name','website']
+    pass
 
 # @admin.register(UserNumber)
 # class UserNumberAdmin(admin.ModelAdmin):

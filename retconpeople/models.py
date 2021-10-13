@@ -405,7 +405,7 @@ class Person(models.Model):
         return list(identities)
 
     class Meta:
-        # ordering=['id']
+        ordering=['id']
         pass
 
 
@@ -436,13 +436,13 @@ class UserLabel(models.Model):
     )
     status=models.IntegerField(choices=STATUS,null=True,default=None,blank=True)
     role=models.IntegerField(choices=ROLES,null=True,default=None,blank=True)
-    wanted = models.BooleanField(null=True,blank=True)
+    wanted = models.BooleanField(null=True,blank=True,db_index=True)
     class Meta:
         abstract=True
 
 class UserName(UserLabel):
     id = models.AutoField(primary_key=True)
-    website=models.ForeignKey("Website",related_name="user_names",on_delete=models.PROTECT,null=False)
+    website=models.ForeignKey("Website",related_name="user_names",on_delete=models.PROTECT,null=False,db_index=True)
     name = sharedstrings.SharedStringField(null=False)
     tags=models.ManyToManyField("semantictags.Tag",related_name="+")
     belongs_to=models.ForeignKey("Person",related_name='usernames',on_delete=models.CASCADE,null=True,blank=True)
@@ -458,7 +458,7 @@ class UserName(UserLabel):
 
 class UserNumber(UserLabel):
     id = models.AutoField(primary_key=True)
-    website=models.ForeignKey("Website",related_name="user_numbers",on_delete=models.PROTECT)
+    website=models.ForeignKey("Website",related_name="user_numbers",on_delete=models.PROTECT,db_index=True)
     number = models.BigIntegerField()
     belongs_to=models.ForeignKey("Person",related_name='user_numbers',on_delete=models.CASCADE,null=True,blank=True)
 
