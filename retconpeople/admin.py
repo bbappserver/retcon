@@ -1,7 +1,8 @@
+import django
 from django.contrib import admin
 from django import forms
 from django.db.models import Q
-from .models import UserName,UserNumber,Person,Website,UrlPattern
+from .models import UserLabel, UserName,UserNumber,Person,Website,UrlPattern
 from retconcreatives.admin import PortrayalInline
 # Register your models here.
 
@@ -80,6 +81,39 @@ class SortedTLDFieldListFilter(admin.RelatedOnlyFieldListFilter):
         ls=super().lookups(request,queryset,model_admin)
         return sorted(ls)
 
+class StatusFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = ('Status')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        l=list(UserLabel.STATUS)
+        l.append((-UserLabel.STATUS_DEAD,'NOT Dead'))
+        return l
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        if self.value() is None:
+            return queryset
+        elif int(self.value()) == -UserLabel.STATUS_DEAD:
+            return queryset.exclude(status=UserLabel.STATUS_DEAD)
+        else:
+            return queryset.filter(status=int(self.value()))
+
 @admin.register(Website)
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
@@ -104,7 +138,8 @@ class UserNameAdmin(admin.ModelAdmin):
     search_fields=["name__name__icontains"]
     autocomplete_fields=["tags","name","website","belongs_to"]
     list_display=['name','website','wanted','status']
-    list_filter=["wanted",'status',
+    list_filter=["wanted",
+    StatusFilter,
     ["website",admin.RelatedOnlyFieldListFilter]] #Only include actually related websites
     list_editable=['wanted','website','status']
     list_select_related=['name','website']
