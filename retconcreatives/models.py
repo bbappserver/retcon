@@ -59,6 +59,18 @@ class CreativeWork(semantictags.Taggable):
         (DATE_PRECISION_MONTH,'Month'),
         (DATE_PRECISION_DAY,'Day')
     )
+    COVER='v' 
+    COMPILATION='c'
+    REMAKE='r'
+    REMASTER='m'
+    REMIX='x'
+    DERIVATIVE_WORK_CHOICES=(
+        (COVER,'Cover:Licensed reproduction of a work often iwth a twist usually a song'),
+        (COMPILATION,'Compilation:Rerelease of shorter works as single entity'),
+        (REMAKE,'Remake:Redo of origional work with same premise but differt execution'),
+        (REMASTER,'Remaster:Rerelease of original material at higher resolution'),
+        (REMIX,"Combination of various source materials if it doesn't match any other category"),
+    )
     name = models.CharField(max_length=64)
     published_on=models.DateField(null=True,blank=True)
     published_on_precision=models.CharField(max_length=1,blank=True,null=True,choices=DATE_PRECISION_CHOICES)
@@ -66,6 +78,7 @@ class CreativeWork(semantictags.Taggable):
     created_by = models.ForeignKey("retconpeople.Person",on_delete=models.PROTECT,null=True,blank=True,related_name="+")
     # representes_collections = models.ManyToManyField('retconstorage.Collection')
     # representes_remotables = models.ManyToManyField('retconremotables.RemoteEntity')
+    #derivation=models.CharField(max_length=1,blank=True,null=True,choices=DERIVATIVE_WORK_CHOICES,help_text='Blank for origional')
     external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
     files= models.ManyToManyField("retconstorage.ManagedFile",related_name="+",blank=True)
 

@@ -85,7 +85,7 @@ class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
     autocomplete_fields=["tld","tags","name","parent_site","owner"]
     list_display=["id","domain","parent_site_name","brief","user_id_format_string","tld"]
-    list_filter=[["tld",SortedTLDFieldListFilter]] #TODO doesn't work because options include all shared strings
+    list_filter=[["tld",SortedTLDFieldListFilter]]
     list_select_related=True
     readonly_fields=['tld']
     exclude=["user_id_patterns"]
@@ -103,10 +103,10 @@ class WebsiteAdmin(admin.ModelAdmin):
 class UserNameAdmin(admin.ModelAdmin):
     search_fields=["name__name__icontains"]
     autocomplete_fields=["tags","name","website","belongs_to"]
-    list_display=['name','website','wanted']
-    list_filter=["wanted",
+    list_display=['name','website','wanted','status']
+    list_filter=["wanted",'status',
     ["website",admin.RelatedOnlyFieldListFilter]] #Only include actually related websites
-    list_editable=['wanted','website']
+    list_editable=['wanted','website','status']
     list_select_related=['name','website']
     pass
 
