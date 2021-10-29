@@ -425,6 +425,10 @@ class UserLabel(models.Model):
         (1,"NSFW"),
         (2,"NSFW Extreme")
     )
+
+    STATUS_AUTO_ADDED=5
+    STATUS_PRIVATE=4
+    STATUS_SUSPENDED=3
     STATUS_DEAD=2
     STATUS_INACTIVE=1
     STATUS_ACTIVE=0
@@ -432,7 +436,9 @@ class UserLabel(models.Model):
         (None,""),
         (STATUS_ACTIVE,"Active"),
         (STATUS_INACTIVE,"Inactive"),
-        (STATUS_DEAD,"Dead")
+        (STATUS_DEAD,"Dead"),
+        (STATUS_SUSPENDED,"Suspended"),
+        (STATUS_PRIVATE,"Private")
     )
     status=models.IntegerField(choices=STATUS,null=True,default=None,blank=True)
     role=models.IntegerField(choices=ROLES,null=True,default=None,blank=True)
@@ -444,7 +450,7 @@ class UserName(UserLabel):
     id = models.AutoField(primary_key=True)
     website=models.ForeignKey("Website",related_name="user_names",on_delete=models.PROTECT,null=False,db_index=True)
     name = sharedstrings.SharedStringField(null=False)
-    tags=models.ManyToManyField("semantictags.Tag",related_name="+")
+    tags=models.ManyToManyField("semantictags.Tag",related_name="+",blank=True)
     belongs_to=models.ForeignKey("Person",related_name='usernames',on_delete=models.CASCADE,null=True,blank=True)
 
     def get_url(self):

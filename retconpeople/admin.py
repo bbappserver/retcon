@@ -78,7 +78,7 @@ class SortedTLDFieldListFilter(admin.RelatedOnlyFieldListFilter):
     TODO:Figure out why this is broken
     '''
     def lookups(self, request, model_admin):
-        ls=super().lookups(request,queryset,model_admin)
+        ls=super().lookups(request,model_admin.queryset,model_admin)
         return sorted(ls)
 
 class StatusFilter(admin.SimpleListFilter):
@@ -99,6 +99,7 @@ class StatusFilter(admin.SimpleListFilter):
         """
         l=list(UserLabel.STATUS)
         l.append((-UserLabel.STATUS_DEAD,'NOT Dead'))
+        l.append(('null','Unset'))
         return l
 
     def queryset(self, request, queryset):
@@ -107,12 +108,17 @@ class StatusFilter(admin.SimpleListFilter):
         provided in the query string and retrievable via
         `self.value()`.
         """
-        if self.value() is None:
+        try:
+            if self.value() is None:
+                return queryset
+            elif self.value() == "null":
+                return queryset.filter(status__isnull=True)
+            elif int(self.value()) == -UserLabel.STATUS_DEAD:
+                return queryset.exclude(status=UserLabel.STATUS_DEAD)
+            else:
+                return queryset.filter(status=int(self.value()))
+        except Exception as e:
             return queryset
-        elif int(self.value()) == -UserLabel.STATUS_DEAD:
-            return queryset.exclude(status=UserLabel.STATUS_DEAD)
-        else:
-            return queryset.filter(status=int(self.value()))
 
 @admin.register(Website)
 class WebsiteAdmin(admin.ModelAdmin):
@@ -137,7 +143,7 @@ class WebsiteAdmin(admin.ModelAdmin):
 class UserNameAdmin(admin.ModelAdmin):
     search_fields=["name__name__icontains"]
     autocomplete_fields=["tags","name","website","belongs_to"]
-    list_display=['name','website','wanted','status']
+    list_display=['id','name','website','wanted','status']
     list_filter=["wanted",
     StatusFilter,
     ["website",admin.RelatedOnlyFieldListFilter]] #Only include actually related websites
