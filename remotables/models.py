@@ -169,7 +169,7 @@ class ImportableModelProtocol():
         raise NotImplementedError()
 
 class Resource(models.Model,ImportableModelProtocol):
-    url= models.CharField(max_length=2000)
+    url= models.CharField(max_length=2000,unique=True)
     added_at= models.DateTimeField(auto_now_add=True,null=False)
 
     #The cache vaidity period usually provided by the webserver, null for indefinite
