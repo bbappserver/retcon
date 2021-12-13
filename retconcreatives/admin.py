@@ -80,7 +80,12 @@ class EpisodeAdmin(TaggableAdminMixin):
         queryset.all().update(published_on_precision=Episode.DATE_PRECISION_MONTH)
     def set_date_precision_to_day(modeladmin, request, queryset):
         queryset.all().update(published_on_precision=Episode.DATE_PRECISION_DAY)
-
+        
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        queryset = queryset.prefetch_related('part_of').prefetch_related('published_by')
+        return queryset
+    
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
     autocomplete_fields=['name','tags','parent','ambiguous_tags',]

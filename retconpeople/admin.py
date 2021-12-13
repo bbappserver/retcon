@@ -51,6 +51,9 @@ class PersonAdmin(admin.ModelAdmin):
     ]
     order_by=('last_name','first_name')
     description = forms.CharField( widget=forms.Textarea )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('pseudonyms')
 
     def get_search_results(self, request, queryset, search_term):
         if search_term == '':
