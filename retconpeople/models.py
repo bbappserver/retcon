@@ -210,6 +210,9 @@ class Person(models.Model):
             if self.first_name is not None:
                 if shorten:
                     "{}.{}".format(self.first_name[0].upper(),self.last_name)
+                if self.pseudonyms.count()>0:
+                        o= self.pseudonyms.all()[0]
+                        return "{}, {} ({})".format(self.last_name,self.first_name,o)
                 return "{}, {}".format(self.last_name,self.first_name)
     @property
     def brief(self,length=64,include_ellipsis=True):
