@@ -181,6 +181,8 @@ class EpisodeViewSet(CreativeWorkViewsetMixin):
 
 class SeriesSerializer(CreativeWorkSerializerMixin):
     
+    episodes=EpisodeSerializer(many=True,required=False)
+    
     # id= serializers.IntegerField()
     # name = serializers.CharField()
 
@@ -279,6 +281,18 @@ class SeriesViewSet(CreativeWorkViewsetMixin):
     """
     queryset = Series.objects.all()
     serializer_class = SeriesSerializer
+    
+    
+    def get_queryset(self):
+        """
+        Optionally restricts the returned purchases to a given user,
+        by filtering against a `username` query parameter in the URL.
+        """
+        queryset = super().get_queryset()
+        params=self.request.query_params.dict()
+        if params:
+            queryset = queryset.filter(**params)
+        return queryset
 
     
 
