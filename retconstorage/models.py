@@ -222,7 +222,7 @@ class ManagedFile(models.Model):
         self.save()
     
     def release(self):
-        se;f.retain_count-=1
+        self.retain_count-=1
         self.save()
 
     def strnames(self):
