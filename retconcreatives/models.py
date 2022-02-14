@@ -1,7 +1,9 @@
 from django.db import models
 from django.conf import settings
+from django.forms import ValidationError
 import django.utils
 import django.core
+from retconstorage.models import ManagedFile
 from sharedstrings import models as sharedstrings
 from retconpeople import models as people
 from semantictags import models as semantictags
@@ -114,10 +116,15 @@ class CreativeWork(semantictags.Taggable):
     def clean(self):
         # Don't allow draft entries to have a pub_date.
         if self.published_on is not None and self.published_on_precision is None:
-            raise ValidationError(_('If a work has a publication date it must also have a precision.'))
+            raise ValidationError(('If a work has a publication date it must also have a precision.'))
         if self.published_on is None and self.published_on_precision is not None:
-            raise ValidationError(_("Must specify a date for publication precision,for don't care use any valid number e.g 01"))
+            raise ValidationError(("Must specify a date for publication precision,for don't care use any valid number e.g 01"))
+    
+    def attach_file_with_blob(self,blob:bytes):
+        mf:ManagedFile=ManagedFile.get_or_create_from_blob(blob)
+        self.files.add(mf)
         
+            
     # class Meta:
     #     constraints = [
     #         models.CheckConstraint(check=(models.Q(published_on=None, published_on_precision=None)|models.Q(published_on__isnull=False,published_on_precision__isnull=False)), name='date_and_precision'),
@@ -161,6 +168,7 @@ class Series(CreativeWork):
 
     parent_series = models.ForeignKey("self",blank=True,null=True,on_delete=models.PROTECT,related_name='child_series')
     related_series = models.ManyToManyField("self", through='RelatedSeries',symmetrical=False,through_fields=('from_series', 'to_series'),related_name='related_from_series')
+    #order_in_parent=models.PositiveSmallIntegerField(null=True,blank=True)
 
     produced_by = models.ManyToManyField("Company",blank=True,related_name='produced')
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES,null=True,blank=True)
@@ -259,6 +267,9 @@ class Episode(CreativeWork):
 
     class Meta:
         unique_together=[('part_of','order_in_series')]
+    
+    def has_file(self):
+        return self.files.filter(storage_status=ManagedFile.STORAGE_STATUS_HAVE).exists()
 
     def __str__(self):
         return self.preferred_name()

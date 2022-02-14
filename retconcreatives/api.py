@@ -1,3 +1,4 @@
+from urllib.request import Request
 from .models import Episode,Series,Company
 from retconpeople.models import Person
 from retconpeople.api import PersonSerializer
@@ -178,6 +179,13 @@ class EpisodeViewSet(CreativeWorkViewsetMixin):
         serializer = self.get_serializer(queryset, many=True)
         return response.Response(serializer.data)
     
+    @action(detail=True, methods=['post'])
+    def attach_file_hash(self, request: Request, pk=None,format=None):
+        episode : Episode = self.get_object()
+        chunks=request.FILES['file'].chunks
+        episode.attach_file_with_blob(chunks)
+    
+
 
 class SeriesSerializer(CreativeWorkSerializerMixin):
     
