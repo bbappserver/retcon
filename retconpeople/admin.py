@@ -1,7 +1,8 @@
+import django
 from django.contrib import admin
 from django import forms
 from django.db.models import Q
-from .models import UserName,UserNumber,Person,Website,UrlPattern
+from .models import UserLabel, UserName,UserNumber,Person,Website,UrlPattern
 from retconcreatives.admin import PortrayalInline
 # Register your models here.
 
@@ -50,6 +51,9 @@ class PersonAdmin(admin.ModelAdmin):
     ]
     order_by=('last_name','first_name')
     description = forms.CharField( widget=forms.Textarea )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('pseudonyms')
 
     def get_search_results(self, request, queryset, search_term):
         if search_term == '':
@@ -77,15 +81,54 @@ class SortedTLDFieldListFilter(admin.RelatedOnlyFieldListFilter):
     TODO:Figure out why this is broken
     '''
     def lookups(self, request, model_admin):
-        ls=super().lookups(request,queryset,model_admin)
+        ls=super().lookups(request,model_admin.queryset,model_admin)
         return sorted(ls)
+
+class StatusFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = ('Status')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        l=list(UserLabel.STATUS)
+        l.append((-UserLabel.STATUS_DEAD,'NOT Dead'))
+        l.append(('null','Unset'))
+        return l
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        try:
+            if self.value() is None:
+                return queryset
+            elif self.value() == "null":
+                return queryset.filter(status__isnull=True)
+            elif int(self.value()) == -UserLabel.STATUS_DEAD:
+                return queryset.exclude(status=UserLabel.STATUS_DEAD)
+            else:
+                return queryset.filter(status=int(self.value()))
+        except Exception as e:
+            return queryset
 
 @admin.register(Website)
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
     autocomplete_fields=["tld","tags","name","parent_site","owner"]
     list_display=["id","domain","parent_site_name","brief","user_id_format_string","tld"]
-    list_filter=[["tld",SortedTLDFieldListFilter]] #TODO doesn't work because options include all shared strings
+    list_filter=[["tld",SortedTLDFieldListFilter]]
     list_select_related=True
     readonly_fields=['tld']
     exclude=["user_id_patterns"]
@@ -103,10 +146,11 @@ class WebsiteAdmin(admin.ModelAdmin):
 class UserNameAdmin(admin.ModelAdmin):
     search_fields=["name__name__icontains"]
     autocomplete_fields=["tags","name","website","belongs_to"]
-    list_display=['name','website','wanted']
+    list_display=['id','name','website','wanted','status']
     list_filter=["wanted",
+    StatusFilter,
     ["website",admin.RelatedOnlyFieldListFilter]] #Only include actually related websites
-    list_editable=['wanted','website']
+    list_editable=['wanted','website','status']
     list_select_related=['name','website']
     pass
 
