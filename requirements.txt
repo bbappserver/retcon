@@ -1,7 +1,7 @@
-Django==2.2.25
+Django==2.2.20
 djangorestframework==3.11.2
 filetype
 requests
 python-dateutil
-pillow==8.3.2
+pillow==8.1.1
 django-cors-headers
