@@ -5,7 +5,7 @@ from .models import ContentResource,EphemeralResource
 @admin.register(ContentResource,EphemeralResource)
 class ExternalContentAdmin(admin.ModelAdmin):
     search_fields=["url"]
-    readonly_fields = ["date_added"]
+    readonly_fields = ["added_at"]
     
     def date_added(self,instance):
         return str(instance.date_added)

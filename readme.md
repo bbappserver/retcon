@@ -58,6 +58,43 @@ e.g. `username.tumblr.com`
 
 By comparison the substitution pattern is much easer.  Simply use a (python format string)[https://www.python.org/dev/peps/pep-3101/#format-strings] where the item that will be substituted into `{}` is the username.
 
+## API
+You wll need to provide an authtoken to access the retcon API.  
+https://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication
+
+To retreive an auth token
+
+**SECURITY NOTE: If you are not serving over https token and or user and passwordfor API is sent in the clear, this is fine on LAN, but use https if you are deploying publically**
+```
+POST /api-token-auth/
+Content-Type: application/json
+
+{'username':'youruser','password':'yourpassword'}
+
+```
+
+Which returns
+```js
+{ 
+    'token' : '9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b'
+}
+```
+
+### Using the API: Example: Test if a person is on file programaticlly
+You can test if a person is on file by asking 
+```
+POST /api/people/search
+Content-Type: application/json
+Authorization: Token yourauthtokenhere
+
+{'urls':['http://www.twitter.com/username']}
+
+```
+**Note the presence of the word token, and that the name of the header is Authorization, not Authentication**
+
+
+In this form the search function will take the url and try to match it against regex for the website pattern.  It will retrieve the corresponding username if it exists and return the corresponding people entires(should be only 1).  Otherwise it responds HTTP 404.
+
 ### About similarities between websites and companies
 In may instances company and website records match up almost 1 to 1 seemingly duplicating information, this is just a side effect of many companies having a we presence.  When the archived work is from a company whic became defunt prior to the web it is sensible for them to be seperate.
 

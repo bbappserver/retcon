@@ -222,9 +222,34 @@ class ManagedFile(models.Model):
         self.save()
     
     def release(self):
-        se;f.retain_count-=1
+        self.retain_count-=1
         self.save()
 
+    @classmethod
+    def get_or_create_from_blob(cls,blob):
+        from hashlib import sha256,md5
+        
+        hasher=sha256()
+        hasher_m=md5()
+        for x in blob:
+            hasher.update(x)
+            hasher_m.update(x)
+            
+        dh=hasher.digest()
+        dh_m=hasher_m.digest()
+        
+        o=cls.objects.filter(sha256=dh)
+        if o.exists():
+            o= o[0]
+            if o.md5 is None:
+                o.md5=dh_m
+                o.save()
+        else:
+            o=cls(sha256=dh,md5=hasher_m.digest())
+            o.save()
+        
+        return o
+        
     def strnames(self):
         return [x.name for x in self.names.all()]
     

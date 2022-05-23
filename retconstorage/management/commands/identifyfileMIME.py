@@ -20,6 +20,12 @@ def identifyFile(prefix,work):
     MIME='application/octet-stream'
     if kind is not None:
         MIME=kind.mime
+    if 'application/octet-stream' == MIME:
+        from mimetypes import guess_type
+        t=guess_type(realpath)
+        if not(t is None):
+            MIME=t.join("/")
+
     return MIME
 
 def hash_worker(prefix, in_q: Queue, out_q: Queue):

@@ -1,9 +1,18 @@
+import django
 from django.contrib import admin
 from .models import Genre,Series,WebVideo,Movie,Episode,Company,RelatedSeries,Illustration,Title,CreativeWork,Portrayal,Character
 from semantictags.admin import TaggableAdminMixin
+from django.forms import ModelForm,FileField, ValidationError
 
 class ExternalContentInline(admin.TabularInline):
     model=CreativeWork.external_representations.through
+    extra=1
+    verbose_name="External URL"
+    verbose_name_plural="External URLs"
+    autocomplete_fields=["contentresource"]
+
+class CompanyExternalContentInline(admin.TabularInline):
+    model=Company.external_representations.through
     extra=1
     verbose_name="External URL"
     verbose_name_plural="External URLs"
@@ -46,7 +55,7 @@ class GenreAdmin(admin.ModelAdmin):
 class SeriesAdmin(admin.ModelAdmin):
     search_fields=['name']
     autocomplete_fields=['tags','ambiguous_tags','produced_by','published_by','created_by','parent_series']
-    #readonly_fields = ('related_from_series',)
+    readonly_fields = ('episodes_human_readable',)
     exclude=["external_representations","files"]
     inlines=(RelatedSeriesInline,LocalizedTitleInline,ExternalContentInline,FilesInline)
 
@@ -57,7 +66,15 @@ class SeriesAdmin(admin.ModelAdmin):
 #     autocomplete_fields=['tags','ambiguous_tags','part_of','created_by','published_by']
 #     exclude=["external_representations",'medium','files']
 #     inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline)
+class CreativeWorkAdminFormBase(ModelForm):
+    file=FileField(required=False,label="Add Uploaded File Hash")
+    #TODO now that I understand custom fields we can probably use string with x to indicate don't care
+    def clean(self):
+        cleaned_data = super().clean()
 
+        if 'published_on' in cleaned_data and 'published_on_precision' not in cleaned_data:
+            raise ValidationError("if a publication date is supplied you must also supply precison")
+    
 @admin.register(Episode)
 class EpisodeAdmin(TaggableAdminMixin):
     autocomplete_fields=['tags','ambiguous_tags','part_of','published_by','created_by']
@@ -67,22 +84,42 @@ class EpisodeAdmin(TaggableAdminMixin):
     search_fields=['name','localized_titles__name','published_by__name']
     inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline,PortrayalInline)
     actions=['set_date_precision_to_year','set_date_precision_to_month','set_date_precision_to_day']
+    
     def set_date_precision_to_year(modeladmin, request, queryset):
         queryset.all().update(published_on_precision=Episode.DATE_PRECISION_YEAR)
     def set_date_precision_to_month(modeladmin, request, queryset):
         queryset.all().update(published_on_precision=Episode.DATE_PRECISION_MONTH)
     def set_date_precision_to_day(modeladmin, request, queryset):
         queryset.all().update(published_on_precision=Episode.DATE_PRECISION_DAY)
-
+        
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        queryset = queryset.prefetch_related('part_of').prefetch_related('published_by')
+        return queryset
+    
+        
+    
+    def get_form(self, request, obj=None, **kwargs):
+        if request.user.is_superuser:
+            kwargs['form'] = CreativeWorkAdminFormBase
+        return super().get_form(request, obj, **kwargs)
+    
+    def save_model(self, request, obj : Episode, form, change):
+        super().save_model(request, obj, form, change)
+        
+        if 'file' in request.FILES:
+            obj.attach_file_with_blob(request.FILES['file'].chunks())
+    
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    autocomplete_fields=['name','tags','parent','ambiguous_tags','website']
-    search_fields=['name','website__name']
-    list_display=['name','defunct','parent','website']
-    list_editable=['defunct','parent','website']
+    autocomplete_fields=['name','tags','parent','ambiguous_tags',]
+    search_fields=['name',]
+    list_display=['name','defunct','parent',]
+    list_editable=['defunct','parent',]
     list_filter=['defunct']
+    inlines=(CompanyExternalContentInline,)
     #allowing sort by name actually sorts on shadredsting_id which is wrong, but the model's default ordering is correct
-    sortable_by=['defunct','parent','website'] 
+    sortable_by=['defunct','parent',] 
     exclude=["external_representations"]
     pass
 

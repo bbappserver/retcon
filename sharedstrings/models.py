@@ -1,4 +1,5 @@
 from django.db import models
+from django.core import validators
 from django import forms
 from django.contrib.admin.widgets import AutocompleteMixin
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
@@ -7,7 +8,9 @@ from django.db.models.fields.related_descriptors import ForwardManyToOneDescript
 
 class Strings(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=64, unique=True)
+    #A string without nulls at leat 1 long and without trailing or leading space
+    name = models.CharField(max_length=64, unique=True,validators=
+    [validators.ProhibitNullCharactersValidator,validators.RegexValidator(r"(?:\S*.*\S|\S)")])
 
     def __str__(self):
         return '{}'.format(self.name)

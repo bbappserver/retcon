@@ -22,8 +22,6 @@ class Command(BaseCommand):
         candidates=Series.search(sname)
         should_create=False
         while len(candidates)!=1:
-                sname = input("Series name: ")
-                candidates=Series.search(sname)
                 if len(candidates) >1:
                     print("Found:\n{}".format(candidates))
                 elif len(candidates)==0:
@@ -31,6 +29,8 @@ class Command(BaseCommand):
                     if yn=='y':
                         should_create=True
                         break
+                sname = input("Series name: ")
+                candidates=Series.search(sname)
 
         print("Using:\n{}".format(candidates))
         candidates=[]
@@ -48,12 +48,16 @@ class Command(BaseCommand):
             if len(candidate_companies)>1:
                 print("multiple companies returned, not currently supported")
                 exit(-1)
+            elif len(candidate_companies)<1:
+                print("Company not dound")
 
             if should_create:
                 ser=Series(name=sname)
                 ser.save()
                 if len(candidate_companies)>0:
-                    ser.published_by.add(candidate_companies)
+                    for c in candidate_companies:
+                        ser.published_by.add(c)
+                    ser.save()
             
             else:
                 candidates=list(Series.search(sname))

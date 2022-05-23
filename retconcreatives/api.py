@@ -1,3 +1,4 @@
+from urllib.request import Request
 from .models import Episode,Series,Company
 from retconpeople.models import Person
 from retconpeople.api import PersonSerializer
@@ -143,6 +144,7 @@ class EpisodeSerializer(CreativeWorkSerializerMixin):
         exclude = []
     
 
+
 class EpisodeViewSet(CreativeWorkViewsetMixin):
     """
     API endpoint that allows Episodes to be viewed or edited.
@@ -150,7 +152,44 @@ class EpisodeViewSet(CreativeWorkViewsetMixin):
     queryset = Episode.objects.all()
     serializer_class = EpisodeSerializer
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        term=request.query_params.get('icontains',None)
+        if term:
+            queryset=queryset.filter(name__icontains=term)
+        
+        term=request.query_params.get('istartswith',None)
+        if term:
+            queryset=queryset.filter(name__istartswith=term)
+        
+        term=request.query_params.get('fileid',None)      
+        if term:
+            try:
+                term=int(term)
+                queryset=queryset.filter(files__in=[term])
+            except:
+                return Response({'status':'error','message':'identityid must be integer'},status=status.HTTP_400_BAD_REQUEST)
+                
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return response.Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def attach_file_hash(self, request: Request, pk=None,format=None):
+        episode : Episode = self.get_object()
+        chunks=request.FILES['file'].chunks
+        episode.attach_file_with_blob(chunks)
+    
+
+
 class SeriesSerializer(CreativeWorkSerializerMixin):
+    
+    episodes=EpisodeSerializer(many=True,required=False)
     
     # id= serializers.IntegerField()
     # name = serializers.CharField()
@@ -250,6 +289,18 @@ class SeriesViewSet(CreativeWorkViewsetMixin):
     """
     queryset = Series.objects.all()
     serializer_class = SeriesSerializer
+    
+    
+    def get_queryset(self):
+        """
+        Optionally restricts the returned purchases to a given user,
+        by filtering against a `username` query parameter in the URL.
+        """
+        queryset = super().get_queryset()
+        params=self.request.query_params.dict()
+        if params:
+            queryset = queryset.filter(**params)
+        return queryset
 
     
 

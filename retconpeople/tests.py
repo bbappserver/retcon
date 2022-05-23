@@ -213,7 +213,24 @@ class PersonAPICrudTest(APICRUDTest):
             r=self.client.post(url,data=d,format='json')
             self.assertNotEqual(r.status_code,status.HTTP_200_OK)
             self.assertNotEqual(r.status_code,status.HTTP_201_CREATED)
-            
+
+    def testPersonSearch(self):
+        w=self.createDefaultWebsite()
+        url='/api/people/autocreate/'
+        upat=UrlPattern(website=w,pattern=r'^(?:https?:\/\/)?(?:www\.)?(?:twitter\.com\/){1,2}@?([^\/]+)\/?$')
+        upat.save()
+        d={'urls':'http://www.twitter.com/username'}
+        r=self.client.post(url,data=d,format='json')
+        self.assertEqual(r.status_code,status.HTTP_201_CREATED)
+
+        url='/api/people/search/'
+        r=self.client.post(url,data=d,format='json')
+        self.assertEqual(r.status_code,status.HTTP_200_OK)
+
+        d={'urls':['http://www.twitter.com/username']}
+        r=self.client.post(url,data=d,format='json')
+        self.assertEqual(r.status_code,status.HTTP_200_OK)
+           
 
     # def testPersonAddDistinguish(self):
     #     with self.subTest("Success"):
