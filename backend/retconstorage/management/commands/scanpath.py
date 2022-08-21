@@ -29,7 +29,8 @@ class Command(BaseCommand):
                 continue
 
             aroot = os.path.abspath(root)
-            eroot = aroot.replace(prefix, "")
+            eroot = os.path.relpath(aroot,prefix)
+            #eroot = aroot.replace(prefix, "")
             with transaction.atomic():
                 spin.next()
                 for file in files:

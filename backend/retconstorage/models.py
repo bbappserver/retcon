@@ -5,6 +5,7 @@ from .fields import HashFileField
 from retcon import settings
 import binascii,os.path,unicodedata
 import sys
+from typing import Optional
 is_macos = sys.platform=='darwin'
 
 
@@ -358,3 +359,30 @@ class CollectionMetadata(models.Model):
 #     Actual file contents should be evaluated to calculate perceptual match'''
 #     value=BigIntegerField()
 #     managed_files= models.ManyToManyField("ManagedFile",related_name='dhashes')
+
+class Container(models.Model):
+    '''Abstract container represents directories and various archives'''
+    parent : Optional['Container'] = models.ForeignKey('self',on_delete=models.PROTECT,null=True,blank=True,related_name='children')
+    name= models.CharField(max_length=1024)
+    
+    def lineage(self,include_self=True):
+        l=[]
+        if include_self:
+            l.append(self)
+        p : Container =self.parent
+        while p is not None:
+            l.append(p)
+            p=p.parent
+        
+        return l
+        
+    def abs_path(self):
+        return os.path.join('/',*reversed(self.lineage()))
+    
+    @property
+    def isdir(self):
+        return os.path.isdir(self.abs_path)
+    
+    class Meta:
+        unique_together=[['parent','name']]
+        #index=[['parent']]

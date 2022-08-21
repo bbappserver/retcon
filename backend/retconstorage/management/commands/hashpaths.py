@@ -20,6 +20,15 @@ def hashfile(path):
     sha256 = hashlib.sha256()
 
     with open(path, 'rb') as f:
+        
+        #tell the system we're gonna need the whoel file if supported.
+        try:
+            os.posix_fadvise(f, 0, 0, os.POSIX_FADV_SEQUENTIAL)
+            os.posix_fadvise(f, 0, 0, os.POSIX_FADV_WILLNEED)
+            os.posix_fadvise(f, 0, 0, os.POSIX_FADV_NOREUSE)
+        except:
+            pass
+        
         while True:
             data = f.read(BUF_SIZE)
             if not data:
