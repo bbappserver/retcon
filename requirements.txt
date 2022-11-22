@@ -3,5 +3,5 @@ djangorestframework==3.11.2
 filetype
 requests
 python-dateutil
-pillow==9.0.1
+pillow==9.3.0
 django-cors-headers
