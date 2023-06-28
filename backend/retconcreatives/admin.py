@@ -1,5 +1,8 @@
+import datetime
+from typing import Any, Optional, Sequence, Type, Union
 import django
 from django.contrib import admin
+from django.forms.widgets import Widget
 from .models import Genre,Series,WebVideo,Movie,Episode,Company,RelatedSeries,Illustration,Title,CreativeWork,Portrayal,Character
 from semantictags.admin import TaggableAdminMixin
 from django.forms import ModelForm,FileField, ValidationError
@@ -66,15 +69,36 @@ class SeriesAdmin(admin.ModelAdmin):
 #     autocomplete_fields=['tags','ambiguous_tags','part_of','created_by','published_by']
 #     exclude=["external_representations",'medium','files']
 #     inlines=(LocalizedTitleInline,ExternalContentInline,FilesInline)
+
+from django.forms import DateField
+class FuzzyDateField(DateField):
+    
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+                 
+    def clean(self, value: Any) -> Any:
+        return value
+
+from dateparser.date import DateDataParser
 class CreativeWorkAdminFormBase(ModelForm):
     file=FileField(required=False,label="Add Uploaded File Hash")
+    published_on =FuzzyDateField(required=False)
     #TODO now that I understand custom fields we can probably use string with x to indicate don't care
     def clean(self):
+        ddp = DateDataParser(settings={'DATE_ORDER': 'YMD'})
+        d=ddp.get_date_data(self.cleaned_data['published_on'])
+        self.cleaned_data['published_on']=d['date_obj']
+        
+        if self.cleaned_data['published_on'] is not None:
+            m_precis={'day':CreativeWork.DATE_PRECISION_DAY,'month':CreativeWork.DATE_PRECISION_MONTH,'year':CreativeWork.DATE_PRECISION_YEAR}
+            self.cleaned_data['published_on_precision']=m_precis[d['period']]
+        
         cleaned_data = super().clean()
 
+        #DateData(date_obj=datetime.datetime(2014, 1, 24, 12, 49), period='day', locale='nl')
         if 'published_on' in cleaned_data and 'published_on_precision' not in cleaned_data:
             raise ValidationError("if a publication date is supplied you must also supply precison")
-    
+        
 @admin.register(Episode)
 class EpisodeAdmin(TaggableAdminMixin):
     autocomplete_fields=['tags','ambiguous_tags','part_of','published_by','created_by']
