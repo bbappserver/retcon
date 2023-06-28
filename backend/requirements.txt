@@ -6,3 +6,4 @@ python-dateutil
 pillow==9.0.1
 django-cors-headers
 djangorestframework-filters
+djangorestframework-camel-case=1.4.2
