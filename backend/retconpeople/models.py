@@ -159,7 +159,7 @@ class Person(models.Model):
         if self.merged_into_id is not None:
             if self.merged_into_id == self.id:
                 raise ValidationError({'merged_into': ('Cannot merge into self')})
-            if self.merged_into.merged_into.id is not None:
+            if self.merged_into.merged_into is not None:
                 raise ValidationError({'merged_into': ('Cannot merge into merged object')})
 
         if self.pk is not None:
@@ -194,7 +194,7 @@ class Person(models.Model):
                 try:
                     #This occasionally causes crashes by infintie recursion when the debugger request formatting
                     #This happens for a currently unknown reason
-                    if self.pseudonyms.count()>0:
+                    if self.pseudonyms.exists():
                         o= self.pseudonyms.all()[0]
                         return o.name
                     else:
@@ -204,7 +204,7 @@ class Person(models.Model):
                             o=u.name
                             return o.name
                     # return 'debug name formate error'
-                except:
+                except Exception as e:
                     return "?"
         else:
             if self.first_name is not None:
@@ -407,6 +407,29 @@ class Person(models.Model):
                 raise Person.DuplicateIdentityError(list(identities))
         return list(identities)
 
+    @classmethod
+    def get_by_pseudonym(cls,name:str ):
+        tokens=name.split(" ")
+        
+        ids=[]
+        for token in tokens:
+            ids.extend((x.id for x in Person.objects.filter(pseudonyms__name__icontains=token)))
+        
+        qs=Person.objects.filter(id__in=ids)
+        
+        lname=name.lower()
+        candidates=set()
+        for p in qs:
+            for ps in p.pseudonyms.all():
+                if ps.name.lower()==lname:
+                    if p not in candidates:
+                        candidates.add(p)
+        return candidates
+    
+    def add_pseudonym(self,name):
+        s, created = sharedstrings.Strings.objects.get_or_create(name=name)
+        self.pseudonyms.add(s)
+    
     class Meta:
         ordering=['id']
         pass

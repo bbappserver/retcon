@@ -270,6 +270,9 @@ class Episode(CreativeWork):
     
     def has_file(self):
         return self.files.filter(storage_status=ManagedFile.STORAGE_STATUS_HAVE).exists()
+    
+    def add_portrayl(self,role,actor):
+        Portrayal(episode=self,role=role,actor=actor).save()
 
     def __str__(self):
         return self.preferred_name()
