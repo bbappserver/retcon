@@ -27,7 +27,7 @@ class UrlPattern(models.Model):
     website = models.ForeignKey("Website",on_delete=models.CASCADE,related_name='user_id_patterns')
 
 
-class Website(models.Model):
+class Website(semantictags.TaggableWithExtras):
     BRIEF_TRUNCATE_LENGTH=100 #TODO get from settings
     id = models.AutoField(primary_key=True)
     parent_site = models.ForeignKey("self",on_delete=models.DO_NOTHING,null=True,blank=True,related_name="child_sites")
@@ -99,7 +99,7 @@ class Website(models.Model):
     def __str__(self):
         return "{} ({})".format(self.name,self.domain)
 
-class Person(models.Model):
+class Person(semantictags.TaggableWithExtras):
     id = models.AutoField(primary_key=True)
     first_name=sharedstrings.SharedStringField(blank=True,null=True)
     last_name=sharedstrings.SharedStringField()

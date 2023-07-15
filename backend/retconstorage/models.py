@@ -273,7 +273,7 @@ class ManagedFile(models.Model):
 
 class Collection(models.Model):
     contents= models.ManyToManyField("ManagedFile",blank=True)
-    parents = models.ManyToManyField("self",blank=True,related_name="children")
+    parents = models.ManyToManyField("self",blank=True,symmetrical=False,related_name="children")
 
 class OrderedCollectionMembers(models.Model):
     managed_file= models.ForeignKey("ManagedFile",on_delete=models.CASCADE,related_name='+')

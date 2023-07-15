@@ -73,3 +73,12 @@ class Taggable(models.Model):
 
     class Meta:
         abstract=True
+
+class TaggableWithExtras(Taggable):
+    tags=models.ManyToManyField("semantictags.Tag",blank=True)
+    ambiguous_tags=models.ManyToManyField("sharedstrings.Strings",blank=True,related_name="+")
+    is_favourite=models.BooleanField(default=False)
+    notes=models.TextField(max_length=512,null=True,default=None,blank=True)
+
+    class Meta:
+        abstract=True

@@ -18,7 +18,7 @@ class Genre(models.Model):
     class Meta:
         ordering = ('name',)
 
-class Company(semantictags.Taggable):
+class Company(semantictags.TaggableWithExtras):
     id = models.AutoField(primary_key=True)
     name=sharedstrings.SharedStringField()
     # name = models.ForeignKey("sharedstrings.Strings",related_name="+",on_delete=models.PROTECT)
@@ -50,7 +50,7 @@ class Title(models.Model):
             ['name','language','creative_work']
         ]
 
-class CreativeWork(semantictags.Taggable):
+class CreativeWork(semantictags.TaggableWithExtras):
 
     DATE_PRECISION_YEAR='y'
     DATE_PRECISION_MONTH='m'
@@ -258,6 +258,7 @@ class Episode(CreativeWork):
 
     part_of=models.ForeignKey("Series",on_delete=models.PROTECT,null=True,blank=True,related_name='episodes')
     order_in_series=models.PositiveSmallIntegerField(null=True,blank=True)
+    production_code=models.CharField(max_length=64,blank=True)
     description = models.TextField(null=True,blank=True)
     medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
 
@@ -291,7 +292,7 @@ class Book(Writing):
 
 class Software(Episode):
     SFT_PLATFORM_HELP='Platforms this sofware runs on including consoles and operating systems'
-    platforms= models.ManyToManyField('self',blank=True,related_name='+',help_text=SFT_PLATFORM_HELP)
+    platforms= models.ManyToManyField('self',blank=True,related_name='+',symmetrical=False,help_text=SFT_PLATFORM_HELP)
     pass
 
 class Illustration(CreativeWork):
