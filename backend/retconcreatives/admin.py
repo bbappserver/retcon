@@ -55,7 +55,7 @@ class GenreAdmin(admin.ModelAdmin):
     autocomplete_fields=['name']
 
 @admin.register(Series)
-class SeriesAdmin(admin.ModelAdmin):
+class SeriesAdmin(TaggableAdminMixin):
     search_fields=['name']
     autocomplete_fields=['tags','ambiguous_tags','produced_by','published_by','created_by','parent_series']
     readonly_fields = ('episodes_human_readable',)
@@ -135,7 +135,7 @@ class EpisodeAdmin(TaggableAdminMixin):
             obj.attach_file_with_blob(request.FILES['file'].chunks())
     
 @admin.register(Company)
-class CompanyAdmin(admin.ModelAdmin):
+class CompanyAdmin(TaggableAdminMixin):
     autocomplete_fields=['name','tags','parent','ambiguous_tags',]
     search_fields=['name',]
     list_display=['name','defunct','parent',]

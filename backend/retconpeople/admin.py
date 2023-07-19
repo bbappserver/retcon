@@ -4,6 +4,7 @@ from django import forms
 from django.db.models import Q
 from .models import UserLabel, UserName,UserNumber,Person,Website,UrlPattern
 from retconcreatives.admin import PortrayalInline
+from semantictags.admin import TaggableAdminMixin
 # Register your models here.
 
 def merge_people(modeladmin, request, queryset):
@@ -36,10 +37,10 @@ class UrlPatternInline(admin.TabularInline):
 
 
 @admin.register(Person)
-class PersonAdmin(admin.ModelAdmin):
+class PersonAdmin(TaggableAdminMixin):
     exclude=("external_representations",'solo_photos','potentially_in_photos','in_photos')
     search_fields=['first_name','last_name','pseudonyms']
-    list_display=["id",'formatted_name','pseudonyms_readonly','first_name','last_name',"description","wanted_id_count"]
+    list_display=["id",'formatted_name','pseudonyms_readonly','first_name','last_name',"is_favourite","wanted_id_count","portrayl_count","description"]
     list_filter=[]
     list_select_related=True
     autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","distinguish_from"]
@@ -64,7 +65,10 @@ class PersonAdmin(admin.ModelAdmin):
             return (Person.objects.filter(q),True)
         except:
             pass
+        
         q=Q(first_name__name__istartswith=search_term) | Q(last_name__name__istartswith=search_term)
+        nl=search_term.split(" ")
+        q|=Q(first_name__name__istartswith=nl[0]) | Q(last_name__name__istartswith=nl[-1])
         q1=Person.objects.filter(q)
         q2=Person.objects.filter(pseudonyms__name__icontains=search_term)
 
@@ -126,7 +130,7 @@ class StatusFilter(admin.SimpleListFilter):
 @admin.register(Website)
 class WebsiteAdmin(admin.ModelAdmin):
     search_fields=["domain"]
-    autocomplete_fields=["tld","tags","name","parent_site","owner"]
+    autocomplete_fields=["tld","tags","name","parent_site","owner",'ambiguous_tags']
     list_display=["id","domain","parent_site_name","brief","user_id_format_string","tld"]
     list_filter=[["tld",SortedTLDFieldListFilter]]
     list_select_related=True
