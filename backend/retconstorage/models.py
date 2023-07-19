@@ -274,6 +274,13 @@ class ManagedFile(models.Model):
 class Collection(models.Model):
     contents= models.ManyToManyField("ManagedFile",blank=True)
     parents = models.ManyToManyField("self",blank=True,symmetrical=False,related_name="children")
+    
+    def __str__(self) -> str:
+        s=super().__str__()
+        try:
+            return self.metadata.name
+        except:
+            return s
 
 class OrderedCollectionMembers(models.Model):
     managed_file= models.ForeignKey("ManagedFile",on_delete=models.CASCADE,related_name='+')
@@ -283,7 +290,7 @@ class OrderedCollectionMembers(models.Model):
 class CollectionMetadata(models.Model):
     '''Optional minimal metadata for this collection'''
     name= models.CharField(max_length=64)
-    description= models.CharField(max_length=256)
+    description= models.CharField(max_length=256,blank=True,null=True)
     collection = models.OneToOneField("Collection",on_delete=models.CASCADE,related_name='metadata')
 
 # class PerceptualMatch(models.model):

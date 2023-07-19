@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.db.transaction import atomic
-from .models import ManagedFile,NamedFile,Filetype
+from .models import ManagedFile,NamedFile,Filetype,Collection,OrderedCollectionMembers,CollectionMetadata
 # Register your models here.
 
 @admin.register(Filetype)
@@ -65,4 +65,17 @@ class ManagedFileAdmin(admin.ModelAdmin):
             queryset=queryset.filter(sha256=search_term)
         return queryset,use_distinct
 
+class InlineOrderedCollectionMemberAdmin(admin.TabularInline):
+    model=OrderedCollectionMembers
+    autocomplete_fields=['managed_file']
+    class Meta:
+        ordering=["ordinal"]
 
+class InlineCollectionMetadata(admin.StackedInline):
+    model=CollectionMetadata
+
+@admin.register(Collection)
+class CollectionAdmin(admin.ModelAdmin):
+    autocomplete_fields=['contents','parents','children']
+    search_fields=['metadata__name']
+    inlines=[InlineOrderedCollectionMemberAdmin,InlineCollectionMetadata]
