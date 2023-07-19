@@ -77,6 +77,7 @@ class SharedStringFormField(forms.CharField):
     widget = SharedStringTextInput
 
     def __init__(self, queryset, *, empty_label='---------', required=True, widget=None, label=None, initial=None, help_text='', to_field_name=None, limit_choices_to=None, **kwargs):
+        if 'blank' in kwargs: del kwargs['blank'] #selently delete blank because shared strings is not a real string field
         super().__init__(max_length=None, min_length=None, strip=True,
                          empty_value='',required=required, widget=SharedStringTextInput, **kwargs)
         # super().__init__(queryset, *, empty_label=empty_label, required=required, widget=widget, label=label, initial=initial, help_text=help_text, to_field_name=to_field_name, limit_choices_to=limit_choices_to, **kwargs)
