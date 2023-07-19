@@ -33,9 +33,9 @@ For machine friendly interaction see
 http://localhost:8000/api
 ```
 
-To export a list of users for hydrus
+To export a list of users for hydrus, that have the wanted flag set to yes.
 ```
-http://localhost:8000/api/site/<id>/users.txt
+http://localhost:8000/api/site/<id>/users.txt?wanted=1
 ```
 e.g.
 ```
