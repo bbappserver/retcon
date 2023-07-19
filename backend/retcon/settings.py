@@ -198,6 +198,8 @@ REST_FRAMEWORK = {
        'rest_framework.authentication.SessionAuthentication',
    ),
     'DEFAULT_RENDERER_CLASSES': (
+        #retcon.api.camelSnakeRenderer,
+        'rest_framework.renderers.JSONRenderer',
         'djangorestframework_camel_case.render.CamelCaseJSONRenderer',
         'djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer',
         # Any other renders

@@ -1,12 +1,24 @@
-from rest_framework import serializers,viewsets,status,response
+from rest_framework import serializers,viewsets,status,response,renderers
 from rest_framework.decorators import action,renderer_classes
 from django.db import transaction
 from django.conf import settings
 from sharedstrings.models import Strings
 import django.db.models.fields.related as rf
+import djangorestframework_camel_case
 
+class CamelSnakeRenderer(renderers.JSONRenderer):
+    '''Answers non browser clients in snake case, but talks to browsers in camelCase'''
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        r=renderer_context['request']
+        if 'HTTP_USER_AGENT' in r.META and r.META['HTTP_USER_AGENT'].startswith('Mozilla'):
+            return djangorestframework_camel_case.render.CamelCaseJSONRenderer().render(data,accepted_media_type=accepted_media_type,renderer_context=renderer_context)
+        else:
+            return super().render(data,accepted_media_type=accepted_media_type,renderer_context=renderer_context)
+            
+    
 
 class RetconModelViewSet(viewsets.ModelViewSet):
+    renderer_classes = [CamelSnakeRenderer]
     '''A modelviewset with variaous helpful extensio methods'''
     def generic_master_detail_list_request_handler(self, request, master, subordinate_field_serializer, subordinate_field_name, subordinate_type,data=None):
         '''Treats POSTs as adding body list elements to a list,GETs as requesting the list, and DELTES as removing elements'''
