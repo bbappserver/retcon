@@ -27,6 +27,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 USER_SETTING_PATH=os.path.join(BASE_DIR,'retcon','private-settings.json')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+try:
+  #auto migrate v11 -> v12
+  import shutil
+  old_db_path=os.path.join(BASE_DIR, '../db.sqlite3')
+  new_db_path=os.path.join(BASE_DIR, 'db.sqlite3')
+  if os.path.exists(old_db_path) and not os.path.exists(new_db_path):
+    shutil.move(old_db_path,new_db_path)
+    print('Notice: Automatically moved db.sqlite3 for v11 to v12')
+except:
+  print('Warn: Failed to migrate db from v11 to v12')
 
 class UserSettings:
 
