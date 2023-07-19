@@ -101,7 +101,7 @@ class CreativeWorkAdminFormBase(ModelForm):
         
 @admin.register(Episode)
 class EpisodeAdmin(TaggableAdminMixin):
-    autocomplete_fields=['tags','ambiguous_tags','part_of','published_by','created_by']
+    autocomplete_fields=['tags','ambiguous_tags','part_of','published_by','created_by','represents_collections']
     exclude=["external_representations","files"]
     list_display=['preferred_name','name','published_on','publisher_names','part_of']
     list_editable=['part_of']

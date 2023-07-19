@@ -78,7 +78,7 @@ class CreativeWork(semantictags.TaggableWithExtras):
     published_on_precision=models.CharField(max_length=1,blank=True,null=True,choices=DATE_PRECISION_CHOICES)
     published_by = models.ManyToManyField("Company",blank=True,related_name='published_%(class)s')
     created_by = models.ForeignKey("retconpeople.Person",on_delete=models.PROTECT,null=True,blank=True,related_name="+")
-    # representes_collections = models.ManyToManyField('retconstorage.Collection')
+    represents_collections = models.ManyToManyField('retconstorage.Collection',blank=True)
     # representes_remotables = models.ManyToManyField('retconremotables.RemoteEntity')
     #derivation=models.CharField(max_length=1,blank=True,null=True,choices=DERIVATIVE_WORK_CHOICES,help_text='Blank for origional')
     external_representations= models.ManyToManyField("remotables.ContentResource",related_name="+",blank=True)
