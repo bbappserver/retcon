@@ -70,7 +70,8 @@ class TaggableAdminMixin(admin.ModelAdmin):
     
     def get_fieldsets(self,request, obj=None):
         #fieldsets= super().get_fieldsets(request,obj)
-        if isinstance(obj,TaggableWithExtras):
+        
+        if issubclass(self.model,TaggableWithExtras):
             f = list(self.get_fields(request,obj))
             
             #TODO get user's preference
@@ -93,9 +94,4 @@ class TaggableAdminMixin(admin.ModelAdmin):
             )]
             return fieldsets
         else:
-            return (
-                None,
-                {
-                    "fields": f,
-                },
-            )
+            return super().get_fieldsets(request,obj=obj)
