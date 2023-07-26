@@ -144,9 +144,9 @@ class AssociateEpsiodeToCompanyImportAction(AssociateImportAction):
 class AssociateEpsiodeToSeriesImportAction(AssociateImportAction):
     requires=["Episode","Series"]
 
-class AssociatePersonPortraylEpisodeImportAction(AssociateImportAction):
+class AssociatePersonPortrayalEpisodeImportAction(AssociateImportAction):
     model: Model=Portrayal
-    yields=['Portrayl']
+    yields=['Portrayal']
     requires=['Episode','Person','Role']
 
 
@@ -161,7 +161,7 @@ get_or_create_actions=[
 associate_actions=[
     AssociateEpsiodeToCompanyImportAction,
     AssociateEpsiodeToSeriesImportAction,
-    AssociatePersonPortraylEpisodeImportAction
+    AssociatePersonPortrayalEpisodeImportAction
 ]
 recommended_action_order=[
     GetOrCreateCompanyImportAction,
@@ -173,7 +173,7 @@ recommended_action_order=[
     GetOrCreatePersonImportAction,
     UpdatePersonAction,
     GetOrCreateRoleImportAction,
-    AssociatePersonPortraylEpisodeImportAction
+    AssociatePersonPortrayalEpisodeImportAction
 ]
 
 from enum import IntEnum
@@ -218,7 +218,7 @@ class Command(BaseCommand):
             'Person first name':[Person,'Person.first_name'],
             'Person last name':[Person,'Person.last_name'],
             'Person pseudonym':[Person,'Person.pseudonym__fuzzy'],
-            'Character Name / Portrayl Role Name':[Character,'Role.name'],
+            'Character Name / Portrayal Role Name':[Character,'Role.name'],
             'Company/Studio name':[Company,'Company.name'],
             'Episode name':[Episode,'Episode.name'],
             'Episode number':[Episode,'Episode.order_in_series'],
@@ -314,7 +314,7 @@ class Command(BaseCommand):
                 #Find person by attributes
                 # Offer to create if no candidate
                 # Associate urls
-                # Create portrayl(person,role,episode)
+                # Create portrayal(person,role,episode)
         
         self.selector_to_table_field={}
         
@@ -360,7 +360,7 @@ class Command(BaseCommand):
                             episode.save()
                             
                             if performer:
-                                episode.add_portrayl(role,performer)
+                                episode.add_portrayal(role,performer)
                             episode.published_by.add(publisher)
                         else:
                             if episode.portrayal_set.filter(actor_id=performer.id):

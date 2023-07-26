@@ -153,7 +153,7 @@ class Person(semantictags.TaggableWithExtras):
         
         target.save(update_fields=['merged_into'])
     
-    def portrayl_count(self):
+    def portrayal_count(self):
         try:
             from retconcreatives.models import Portrayal
             return Portrayal.objects.filter(actor=self).count()

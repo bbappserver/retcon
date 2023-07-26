@@ -354,4 +354,4 @@ class EpisodeAPICRUDTestCase(APICRUDTest):
         # description = models.TextField(null=True,blank=True)
         # medium= models.PositiveSmallIntegerField(choices=MEDIUM_CHOICES)
         # titles
-        # portrayls
+        # portrayals

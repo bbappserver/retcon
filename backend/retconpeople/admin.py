@@ -12,7 +12,7 @@ def merge_people(modeladmin, request, queryset):
     pass
 merge_people.short_description = "Combine aliased people into the oldest one."
 
-class ReversePortraylInline(admin.TabularInline):
+class ReversePortrayalInline(admin.TabularInline):
     model=PortrayalInline.model
     ordering=('episode__name',)
     autocomplete_fields=('episode','role')
@@ -40,7 +40,7 @@ class UrlPatternInline(admin.TabularInline):
 class PersonAdmin(TaggableAdminMixin):
     exclude=("external_representations",'solo_photos','potentially_in_photos','in_photos')
     search_fields=['first_name','last_name','pseudonyms']
-    list_display=["id",'formatted_name','pseudonyms_readonly','first_name','last_name',"is_favourite","wanted_id_count","portrayl_count","description"]
+    list_display=["id",'formatted_name','pseudonyms_readonly','first_name','last_name',"is_favourite","wanted_id_count","portrayal_count","description"]
     list_filter=[]
     list_select_related=True
     autocomplete_fields=["pseudonyms","tags","ambiguous_tags","first_name","last_name","distinguish_from"]
@@ -48,7 +48,7 @@ class PersonAdmin(TaggableAdminMixin):
     readonly_fields = ('uuid',)
     
     inlines = [
-        UserNameInline,UserNumberInline,ExternalPersonContentInline,ReversePortraylInline
+        UserNameInline,UserNumberInline,ExternalPersonContentInline,ReversePortrayalInline
     ]
     order_by=('last_name','first_name')
     description = forms.CharField( widget=forms.Textarea )
@@ -57,25 +57,26 @@ class PersonAdmin(TaggableAdminMixin):
         return super().get_queryset(request).prefetch_related('pseudonyms')
 
     def get_search_results(self, request, queryset, search_term):
+        search_term=search_term.strip()
         if search_term == '':
-            return (Person.objects.all(),True)
+            return (queryset.all(),True)
         try:
             id=int(search_term)
             q=Q(id=id)|Q(pseudonyms__name__icontains=search_term)|Q(usernames__name__name__istartswith=search_term)|Q(user_numbers__number=search_term)
-            return (Person.objects.filter(q),True)
+            return (queryset.filter(q),True)
         except:
             pass
         
         q=Q(first_name__name__istartswith=search_term) | Q(last_name__name__istartswith=search_term)
         nl=search_term.split(" ")
         q|=Q(first_name__name__istartswith=nl[0]) | Q(last_name__name__istartswith=nl[-1])
-        q1=Person.objects.filter(q)
-        q2=Person.objects.filter(pseudonyms__name__icontains=search_term)
+        q1=queryset.filter(q)
+        q2=queryset.filter(pseudonyms__name__icontains=search_term)
 
         if len(search_term)<3:
-            q3=Person.objects.filter(usernames__name__name__istartswith=search_term)
+            q3=queryset.filter(usernames__name__name__istartswith=search_term)
         else:
-            q3=Person.objects.filter(usernames__name__name__icontains=search_term)
+            q3=queryset.filter(usernames__name__name__icontains=search_term)
         return (q1 | q2 |q3 ,True)
         # return super().get_search_results(request, queryset, search_term)
 
