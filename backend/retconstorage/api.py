@@ -2,6 +2,11 @@ from .models import NamedFile,ManagedFile
 from rest_framework import serializers,viewsets,status,response
 from rest_framework.decorators import action,renderer_classes
 from rest_framework.response import Response
+
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie, vary_on_headers
+
 class NamedFileSerializer(serializers.ModelSerializer):
     
     # id= serializers.IntegerField()
@@ -51,6 +56,19 @@ class NamedFileViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data,status=status.HTTP_200_OK)
+    
+
+    @method_decorator(cache_page(5*60))
+    @action(['get'],detail=False)
+    def ls(self, request, *args, **kwargs):
+        term=request.query_params.get('path',None)
+        files,dirs= NamedFile.ls(term)
+        if files or dirs:
+            serializer = self.get_serializer(files, many=True)
+            d={'files':serializer.data,'dirs':dirs}
+            return Response(d,status=status.HTTP_200_OK)
+        else:
+            return Response([],status=status.HTTP_404_NOT_FOUND)
 
 
     # @action(detail=False, methods=['get','post'])

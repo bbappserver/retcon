@@ -53,6 +53,20 @@ class NamedFile(models.Model):
 
     def alternate_names(self):
         return [x.name for x in self.identity.names.all()]
+    
+    @classmethod
+    def ls(cls,dir_abspath):
+        if dir_abspath is None:
+            return []
+        import re
+        r=re.compile(f'{re.escape(dir_abspath)}\/[^/]+\/?$')#one path element optional / end of string
+        rdir=re.compile(f'{re.escape(dir_abspath)}\/([^/]+)/.+')#one path element optional / end of string
+        cand= list(cls.objects.filter(name__startswith=dir_abspath))
+        files= [x for x in cand if r.search(x.name) is not None]
+        dirs= (rdir.match(x.name).group(1) for x in cand if rdir.match(x.name) )
+        out=set(list(dirs))
+        return (files,out)
+        
 
     @property
     def abspath(self,prefix=settings.NAMED_FILE_PREFIX):
