@@ -2,6 +2,7 @@ from .models import NamedFile,ManagedFile
 from rest_framework import serializers,viewsets,status,response
 from rest_framework.decorators import action,renderer_classes
 from rest_framework.response import Response
+from rest_framework.permissions import IsAdminUser
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -23,6 +24,7 @@ class NamedFileViewSet(viewsets.ModelViewSet):
     """
     queryset = NamedFile.objects.all()
     serializer_class = NamedFileSerializer
+    permission_classes=[IsAdminUser]
 
     # def list(self, request, *args,**kwargs):
     #     d=request.data
