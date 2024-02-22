@@ -1,6 +1,41 @@
-##Copyright
-Retcon the internat metadata archival engine.
+## Copyright
+Retcon the internet metadata archival engine.
     Copyright (C) 2019  The Hydrus Network Extension Developer Consortium
+
+This software is distributed under the **LGPL v2**
+
+For greater certainty, it is distributed in this manner expressly to
+prevent restriction which may discourage its adoption, as the goal of
+the project is to have the best possible metadata in a standard interchange
+format, even at the expense of allowing other entities to be less 
+restricted in its commercial use.
+
+This is also why it is not released under GPL or AGPL, we expressly intend
+that you may use this software as part of a commercial platform if you so
+choose, and for the purposes of this, we define the whole of this package as
+a module which may be "dynamically linked" as part of your larger deployment.
+
+Proprietary extensions which you make may exist independently and read from
+this software via its REST APIs, without beingsubject to this license;
+however if you make use of its prebuilt front end,or modify the logic of the
+backend application or its interfaces you must make available
+these modifications subject to the terms of the LGPLv2.
+
+Commercial exchange of data(metadata) collected with this is expressly permitted and encouraged, 
+as commercial availability is likely to encourage this data to be preserved, 
+and of higher quality.   This data is not part of the software and this license does
+not extend to it.
+
+That is this software is under LGPLv2 specifically for the case outlined in the preamble.
+> For example, on rare occasions, there may be a special need to
+> encourage the widest possible use of a certain library, so that it
+> becomes a de-facto standard. To achieve this, non-free programs must
+> be allowed to use the library.
+
+If you fork this software, you are permitted to upgrade this license under the terms of the
+GLPLv2, to any stronger GPL which is compatible, but we strongly advise against it, and will
+reject changes contributed for this purpose.
+
     
 ### GNU LESSER GENERAL PUBLIC LICENSE
 Version 2.1, February 1999
